@@ -1,0 +1,24 @@
+{
+  "name": "mien-spa",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.0",
+    "nuxt": "^4.5.2",
+    "tailwindcss": "^4.1.0",
+    "vue": "^3.5.0",
+    "vue-router": "^5.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vue-tsc": "^3.2.0"
+  }
+}
