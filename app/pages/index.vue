@@ -50,6 +50,7 @@ const form = reactive({
 })
 
 const today = new Date().toISOString().slice(0, 10)
+const route = useRoute()
 
 function openBooking(service = '') {
   form.service = service
@@ -100,7 +101,10 @@ watch(isBookingOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
 
-onMounted(() => window.addEventListener('keydown', onKeydown))
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  if (route.query['dat-lich'] === '1') openBooking()
+})
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   document.body.style.overflow = ''
@@ -109,26 +113,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="min-h-[100dvh] overflow-x-hidden bg-[#f3efe5] text-[#293126]">
-    <header class="absolute inset-x-0 top-0 z-20">
-      <div class="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-6 md:px-10 lg:px-14">
-        <a href="#top" class="group flex items-center gap-3" aria-label="MIÊN Spa, về đầu trang">
-          <span class="grid size-9 place-items-center rounded-full border border-[#4c5d43]/35 transition-transform duration-500 group-hover:rotate-45">
-            <span class="h-3.5 w-3.5 rounded-tl-full rounded-br-full bg-[#4c5d43]" />
-          </span>
-          <span class="text-[0.88rem] font-semibold tracking-[0.28em]">MIÊN</span>
-        </a>
-
-        <nav class="hidden items-center gap-8 text-[0.78rem] font-medium tracking-wide lg:flex" aria-label="Điều hướng chính">
-          <a href="#lieu-trinh" class="nav-link">Liệu trình</a>
-          <a href="#khong-gian" class="nav-link">Không gian</a>
-          <a href="#cau-chuyen" class="nav-link">Câu chuyện</a>
-        </nav>
-
-        <button class="button-quiet" type="button" @click="openBooking()">
-          Đặt một khoảng nghỉ
-        </button>
-      </div>
-    </header>
+    <SiteHeader>
+      <template #action>
+        <button class="button-quiet" type="button" @click="openBooking()">Đặt một khoảng nghỉ</button>
+      </template>
+    </SiteHeader>
 
     <main id="top">
       <section class="relative min-h-[100dvh] px-5 pb-10 pt-28 md:px-10 lg:px-14 lg:pb-14">
@@ -289,22 +278,7 @@ onBeforeUnmount(() => {
       </section>
     </main>
 
-    <footer class="px-5 py-14 md:px-10 lg:px-14">
-      <div class="mx-auto grid max-w-[1400px] gap-10 border-t border-[#77806d]/30 pt-10 md:grid-cols-[1fr_auto_auto] md:items-end md:gap-16">
-        <div>
-          <p class="font-display text-5xl font-light tracking-[-0.04em]">MIÊN</p>
-          <p class="mt-3 text-xs text-[#656b61]">Một khoảng lặng cho cơ thể.</p>
-        </div>
-        <div class="text-xs leading-6 text-[#596056]">
-          <p>18 Nguyễn Ư Dĩ, Thảo Điền</p>
-          <p>TP. Hồ Chí Minh</p>
-        </div>
-        <div class="text-xs leading-6 text-[#596056]">
-          <a href="tel:02873028628" class="block hover:text-[#2f392a]">028 7302 8628</a>
-          <a href="mailto:hello@mien-spa.vn" class="block hover:text-[#2f392a]">hello@mien-spa.vn</a>
-        </div>
-      </div>
-    </footer>
+    <SiteFooter />
 
     <Teleport to="body">
       <Transition name="drawer">
