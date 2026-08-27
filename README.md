@@ -22,6 +22,7 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 corepack pnpm install
 copy .env.example .env
 corepack pnpm db:migrate
+corepack pnpm db:seed
 corepack pnpm dev
 ```
 
@@ -40,3 +41,9 @@ Sau đó mở `http://localhost:3000/admin/dang-nhap` để đăng nhập. Sessi
 - `PATCH /api/auth/profile` cập nhật hồ sơ hoặc đổi mật khẩu.
 
 Nhóm API `/api/admin` yêu cầu tài khoản có vai trò `owner` hoặc `manager`.
+
+## Dữ liệu mẫu
+
+Chạy `pnpm db:seed` sau migration để tạo dữ liệu mẫu cho tài khoản quản trị, vai trò, dịch vụ, sản phẩm, tồn kho, khách hàng, nhân viên, lịch hẹn trong ngày và bài viết. Seeder dùng upsert nên có thể chạy lại mà không nhân đôi dữ liệu mẫu.
+
+Seeder tạo một tài khoản `owner` từ nhóm biến `ADMIN_BOOTSTRAP_*` và một tài khoản `manager` từ nhóm `SEED_MANAGER_*`. Nếu không cấu hình mật khẩu khi tạo user mới, seeder sinh mật khẩu ngẫu nhiên mạnh và chỉ in ra terminal một lần. Seeder không ghi đè mật khẩu của tài khoản đã tồn tại.
