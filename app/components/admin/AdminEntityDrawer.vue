@@ -6,6 +6,8 @@ const props = defineProps<{
   title: string
   fields: AdminFormField[]
   value?: AdminRow | null
+  saving?: boolean
+  apiError?: string
 }>()
 
 const emit = defineEmits<{ close: []; save: [value: AdminRow] }>()
@@ -21,7 +23,7 @@ watch(() => [props.open, props.value] as const, () => {
 function submit() {
   Object.keys(errors).forEach((key) => delete errors[key])
   props.fields.forEach((field) => {
-    if (field.key !== 'note' && field.key !== 'summary' && !String(form[field.key] ?? '').trim()) errors[field.key] = `Vui lòng nhập ${field.label.toLowerCase()}.`
+    if (field.required !== false && !String(form[field.key] ?? '').trim()) errors[field.key] = `Vui lòng nhập ${field.label.toLowerCase()}.`
   })
   if (Object.keys(errors).length) return
   emit('save', { ...form })
@@ -43,6 +45,7 @@ function submit() {
           </div>
 
           <form class="mt-8 grid gap-5" novalidate @submit.prevent="submit">
+            <div v-if="apiError" class="rounded-sm border border-[#aa746c]/30 bg-[#f2e4df] px-4 py-3 text-xs leading-5 text-[#7d443c]" role="alert">{{ apiError }}</div>
             <label v-for="field in fields" :key="field.key" class="admin-field">
               <span>{{ field.label }}</span>
               <select v-if="field.type === 'select'" v-model="form[field.key]" :aria-invalid="Boolean(errors[field.key])">
@@ -56,8 +59,8 @@ function submit() {
             </label>
 
             <div class="mt-3 flex flex-col-reverse gap-3 border-t border-[#78816f]/20 pt-6 sm:flex-row sm:justify-end">
-              <AppButton label="Hủy" variant="secondary" @click="emit('close')" />
-              <AppButton label="Lưu thông tin" type="submit" icon="check" />
+              <AppButton label="Hủy" variant="secondary" :disabled="saving" @click="emit('close')" />
+              <AppButton :label="saving ? 'Đang lưu…' : 'Lưu thông tin'" type="submit" icon="check" :disabled="saving" />
             </div>
           </form>
         </aside>

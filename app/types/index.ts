@@ -39,4 +39,5 @@ export type AdminFormField = {
   placeholder?: string
   helper?: string
   options?: string[]
+  required?: boolean
 }

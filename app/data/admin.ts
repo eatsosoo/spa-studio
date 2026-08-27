@@ -1,6 +1,7 @@
 import type { AdminColumn, AdminFilter, AdminFormField, AdminRow } from '~/types'
 
 export type AdminResourceConfig = {
+  resource: 'customers' | 'products' | 'bookings' | 'employees' | 'posts'
   title: string
   eyebrow: string
   description: string
@@ -13,8 +14,9 @@ export type AdminResourceConfig = {
   rows: AdminRow[]
 }
 
-export const adminResources: Record<string, AdminResourceConfig> = {
+export const adminResources: Record<AdminResourceConfig['resource'], AdminResourceConfig> = {
   customers: {
+    resource: 'customers',
     title: 'Khách hàng',
     eyebrow: 'Quan hệ khách hàng',
     description: 'Lịch sử ghé, hạng thành viên và những ghi chú cần nhớ cho lần chăm sóc tiếp theo.',
@@ -38,8 +40,8 @@ export const adminResources: Record<string, AdminResourceConfig> = {
       { key: 'name', label: 'Họ và tên', placeholder: 'Tên khách hàng' },
       { key: 'phone', label: 'Số điện thoại', type: 'tel', placeholder: '090 000 0000' },
       { key: 'email', label: 'Email', type: 'email', placeholder: 'ten@email.com' },
-      { key: 'tier', label: 'Hạng thành viên', type: 'select', options: ['Khách mới', 'Mộc', 'An'] },
-      { key: 'note', label: 'Ghi chú chăm sóc', type: 'textarea', helper: 'Không ghi thông tin sức khỏe nhạy cảm nếu chưa có sự đồng ý.' },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: ['Đang hoạt động', 'Tạm ngưng', 'Đã chặn'] },
+      { key: 'note', label: 'Ghi chú chăm sóc', type: 'textarea', required: false, helper: 'Không ghi thông tin sức khỏe nhạy cảm nếu chưa có sự đồng ý.' },
     ],
     rows: [
       { id: 1, name: 'Nguyễn Minh Thư', phone: '093 842 7165', lastVisit: '24/08/2026', visits: 14, tier: 'An' },
@@ -51,6 +53,7 @@ export const adminResources: Record<string, AdminResourceConfig> = {
     ],
   },
   products: {
+    resource: 'products',
     title: 'Sản phẩm',
     eyebrow: 'Kho và bán lẻ',
     description: 'Theo dõi giá bán, mức tồn và trạng thái hiển thị trên cửa hàng trực tuyến.',
@@ -78,6 +81,7 @@ export const adminResources: Record<string, AdminResourceConfig> = {
       { key: 'stock', label: 'Số lượng tồn', type: 'number' },
       { key: 'price', label: 'Giá bán', type: 'number' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: ['Đang bán', 'Sắp hết', 'Tạm ẩn'] },
+      { key: 'description', label: 'Mô tả ngắn', type: 'textarea', required: false },
     ],
     rows: [
       { id: 1, name: 'Serum Sương Mai', sku: 'MN-SM-030', category: 'Chăm sóc da', stock: 18, price: 780000, status: 'Đang bán' },
@@ -88,6 +92,7 @@ export const adminResources: Record<string, AdminResourceConfig> = {
     ],
   },
   bookings: {
+    resource: 'bookings',
     title: 'Đặt lịch',
     eyebrow: 'Vận hành hôm nay',
     description: 'Sắp xếp lịch trị liệu theo khách, kỹ thuật viên và trạng thái xác nhận.',
@@ -95,6 +100,7 @@ export const adminResources: Record<string, AdminResourceConfig> = {
     searchPlaceholder: 'Tìm khách, liệu trình hoặc nhân viên',
     singularLabel: 'lịch hẹn',
     columns: [
+      { key: 'date', label: 'Ngày', type: 'date' },
       { key: 'time', label: 'Thời gian' },
       { key: 'customer', label: 'Khách hàng' },
       { key: 'service', label: 'Liệu trình' },
@@ -110,11 +116,13 @@ export const adminResources: Record<string, AdminResourceConfig> = {
     ],
     fields: [
       { key: 'customer', label: 'Khách hàng', placeholder: 'Tên khách hàng' },
+      { key: 'phone', label: 'Số điện thoại', type: 'tel', placeholder: '090 000 0000' },
       { key: 'service', label: 'Liệu trình', type: 'select', options: ['Thả lỏng toàn thân', 'Phục hồi làn da', 'Chăm sóc da đầu', 'Nghi thức đá ấm'] },
       { key: 'date', label: 'Ngày hẹn', type: 'date' },
       { key: 'time', label: 'Giờ bắt đầu', type: 'time' },
       { key: 'staff', label: 'Kỹ thuật viên', type: 'select', options: ['Bảo Ngọc', 'Thùy Dung', 'Yến Nhi', 'Mai Phương'] },
       { key: 'status', label: 'Trạng thái', type: 'select', options: ['Chờ xác nhận', 'Đã xác nhận', 'Đã hoàn tất'] },
+      { key: 'note', label: 'Ghi chú', type: 'textarea', required: false },
     ],
     rows: [
       { id: 1, time: '09:15', customer: 'Nguyễn Minh Thư', service: 'Phục hồi làn da', staff: 'Bảo Ngọc', room: 'An 02', status: 'Đã hoàn tất' },
@@ -125,6 +133,7 @@ export const adminResources: Record<string, AdminResourceConfig> = {
     ],
   },
   employees: {
+    resource: 'employees',
     title: 'Nhân viên',
     eyebrow: 'Đội ngũ MIÊN',
     description: 'Vai trò, ca làm và trạng thái hiện tại của từng thành viên.',
@@ -145,11 +154,13 @@ export const adminResources: Record<string, AdminResourceConfig> = {
       { label: 'Nghỉ hôm nay', field: 'status', value: 'Nghỉ hôm nay' },
     ],
     fields: [
+      { key: 'code', label: 'Mã nhân viên', placeholder: 'NV-001' },
       { key: 'name', label: 'Họ và tên', placeholder: 'Tên nhân viên' },
       { key: 'phone', label: 'Số điện thoại', type: 'tel' },
+      { key: 'email', label: 'Email', type: 'email', required: false },
+      { key: 'hireDate', label: 'Ngày vào làm', type: 'date' },
       { key: 'role', label: 'Vai trò', type: 'select', options: ['Kỹ thuật viên', 'Lễ tân', 'Quản lý', 'Tư vấn viên'] },
-      { key: 'shift', label: 'Ca làm mặc định', type: 'select', options: ['09:00–17:00', '12:30–21:00', 'Linh hoạt'] },
-      { key: 'status', label: 'Trạng thái', type: 'select', options: ['Đang làm việc', 'Nghỉ hôm nay'] },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: ['Đang làm việc', 'Nghỉ hôm nay', 'Đã nghỉ việc'] },
     ],
     rows: [
       { id: 1, name: 'Hoàng Bảo Ngọc', role: 'Kỹ thuật viên', phone: '090 684 5217', shift: '09:00–17:00', appointments: 5, status: 'Đang làm việc' },
@@ -160,6 +171,7 @@ export const adminResources: Record<string, AdminResourceConfig> = {
     ],
   },
   posts: {
+    resource: 'posts',
     title: 'Bài viết',
     eyebrow: 'Nội dung và kiến thức',
     description: 'Quản lý bài viết chăm sóc tại nhà và câu chuyện thương hiệu trên website.',
@@ -177,13 +189,14 @@ export const adminResources: Record<string, AdminResourceConfig> = {
       { label: 'Tất cả', field: '', value: '' },
       { label: 'Đã xuất bản', field: 'status', value: 'Đã xuất bản' },
       { label: 'Bản nháp', field: 'status', value: 'Bản nháp' },
-      { label: 'Đã lên lịch', field: 'status', value: 'Đã lên lịch' },
+      { label: 'Lưu trữ', field: 'status', value: 'Lưu trữ' },
     ],
     fields: [
       { key: 'title', label: 'Tiêu đề', placeholder: 'Tiêu đề bài viết' },
       { key: 'category', label: 'Chuyên mục', type: 'select', options: ['Chăm sóc tại nhà', 'Hiểu về cơ thể', 'Câu chuyện MIÊN'] },
-      { key: 'summary', label: 'Mô tả ngắn', type: 'textarea' },
-      { key: 'status', label: 'Trạng thái', type: 'select', options: ['Bản nháp', 'Đã lên lịch', 'Đã xuất bản'] },
+      { key: 'summary', label: 'Mô tả ngắn', type: 'textarea', required: false },
+      { key: 'content', label: 'Nội dung', type: 'textarea', helper: 'Nội dung đầy đủ của bài viết.' },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: ['Bản nháp', 'Đã xuất bản', 'Lưu trữ'] },
     ],
     rows: [
       { id: 1, title: 'Một buổi tối để cơ thể chậm lại', category: 'Chăm sóc tại nhà', author: 'Khánh Vân', updatedAt: '25/08/2026', status: 'Đã xuất bản' },

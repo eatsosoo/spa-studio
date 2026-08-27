@@ -3,6 +3,7 @@ defineProps<{ open: boolean }>()
 defineEmits<{ close: [] }>()
 
 const route = useRoute()
+const { user } = useAdminAuth()
 const items = [
   { label: 'Tổng quan', to: '/admin', icon: 'dashboard' },
   { label: 'Khách hàng', to: '/admin/khach-hang', icon: 'users' },
@@ -57,13 +58,13 @@ function isActive(to: string) {
           <AppIcon name="external" :size="17" />
           Xem website
         </NuxtLink>
-        <div class="mt-5 flex items-center gap-3">
-          <span class="grid size-9 place-items-center rounded-full bg-[#d8d2c3] text-xs font-semibold text-[#35402f]">PA</span>
+        <NuxtLink to="/admin/ho-so" class="mt-5 flex items-center gap-3 rounded-sm p-1 transition hover:bg-white/[0.06]" @click="$emit('close')">
+          <span class="grid size-9 place-items-center rounded-full bg-[#d8d2c3] text-xs font-semibold text-[#35402f]">{{ user?.initials }}</span>
           <div class="min-w-0">
-            <p class="truncate text-xs font-semibold text-[#f2eee5]">Phương Anh</p>
-            <p class="mt-0.5 text-[0.65rem] text-[#99a494]">Quản lý chi nhánh</p>
+            <p class="truncate text-xs font-semibold text-[#f2eee5]">{{ user?.fullName }}</p>
+            <p class="mt-0.5 truncate text-[0.65rem] text-[#99a494]">{{ user?.jobTitle }}</p>
           </div>
-        </div>
+        </NuxtLink>
       </div>
     </div>
   </aside>

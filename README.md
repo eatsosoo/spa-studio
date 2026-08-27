@@ -1,6 +1,6 @@
 # MIÊN Spa
 
-Landing page Nuxt 4 cho một thương hiệu spa cao cấp, với form đặt lịch kết nối qua Nitro API.
+Website Nuxt 4 cho một thương hiệu spa cao cấp, gồm landing page, cửa hàng và trang quản trị kết nối MySQL qua Nitro API.
 
 Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./docs/database.md) để biết schema, migration và các quy ước nghiệp vụ.
 
@@ -20,14 +20,23 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 
 ```bash
 corepack pnpm install
+copy .env.example .env
+corepack pnpm db:migrate
 corepack pnpm dev
 ```
 
-Mở `http://localhost:3000`.
+Điền chuỗi kết nối MySQL vào `DATABASE_URL`. Để khởi tạo tài khoản quản trị đầu tiên, đặt `ADMIN_BOOTSTRAP_USERNAME`, `ADMIN_BOOTSTRAP_PASSWORD` (tối thiểu 8 ký tự) và `ADMIN_BOOTSTRAP_EMAIL` trong `.env`. Tài khoản chỉ được tạo khi chưa có owner hoặc manager.
 
-## Các bước tiếp theo
+Sau đó mở `http://localhost:3000/admin/dang-nhap` để đăng nhập. Session quản trị được lưu bằng cookie HttpOnly và có thời hạn bảy ngày.
 
-- Thay dữ liệu giả lập trong `server/api/booking.post.ts` bằng service ghi MySQL.
-- Thay dữ liệu trong `app/data/admin.ts` và `app/data/products.ts` bằng API MySQL.
-- Bổ sung xác nhận lịch qua Zalo, SMS hoặc email.
-- Kết nối trang quản trị lịch hẹn và CRM.
+## API quản trị
+
+- `GET, POST /api/admin/:resource`
+- `GET, PATCH, DELETE /api/admin/:resource/:id`
+- Các resource: `customers`, `products`, `bookings`, `employees`, `posts`.
+- `GET /api/admin/dashboard` trả dữ liệu tổng hợp cho trang tổng quan.
+- `POST /api/booking` ghi yêu cầu đặt lịch từ landing page vào MySQL.
+- `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` xử lý session quản trị.
+- `PATCH /api/auth/profile` cập nhật hồ sơ hoặc đổi mật khẩu.
+
+Nhóm API `/api/admin` yêu cầu tài khoản có vai trò `owner` hoặc `manager`.

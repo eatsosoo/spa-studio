@@ -6,6 +6,9 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    adminBootstrapUsername: process.env.ADMIN_BOOTSTRAP_USERNAME,
+    adminBootstrapPassword: process.env.ADMIN_BOOTSTRAP_PASSWORD,
+    adminBootstrapEmail: process.env.ADMIN_BOOTSTRAP_EMAIL,
   },
   vite: {
     plugins: [tailwindcss()],

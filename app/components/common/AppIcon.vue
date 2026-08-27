@@ -17,9 +17,17 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-else-if="name === 'close'"><path d="m6 6 12 12M18 6 6 18"/></template>
     <template v-else-if="name === 'arrow'"><path d="M5 12h14M13 6l6 6-6 6"/></template>
     <template v-else-if="name === 'edit'"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></template>
+    <template v-else-if="name === 'trash'"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></template>
     <template v-else-if="name === 'refresh'"><path d="M20 6v6h-6M4 18v-6h6M6.5 7.5A7 7 0 0 1 20 12M4 12a7 7 0 0 0 13.5 4.5"/></template>
     <template v-else-if="name === 'external'"><path d="M15 3h6v6M10 14 21 3M18 13v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h7"/></template>
     <template v-else-if="name === 'chevron'"><path d="m9 18 6-6-6-6"/></template>
+    <template v-else-if="name === 'chevron-down'"><path d="m6 9 6 6 6-6"/></template>
+    <template v-else-if="name === 'mail'"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></template>
+    <template v-else-if="name === 'lock'"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></template>
+    <template v-else-if="name === 'eye'"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></template>
+    <template v-else-if="name === 'eye-off'"><path d="m3 3 18 18M10.6 6.2A10.5 10.5 0 0 1 12 6c6.5 0 10 6 10 6a16.6 16.6 0 0 1-3 3.8M6.2 6.2C3.5 8 2 12 2 12s3.5 6 10 6a10 10 0 0 0 3.2-.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></template>
+    <template v-else-if="name === 'profile'"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></template>
+    <template v-else-if="name === 'logout'"><path d="M10 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5M14 8l4 4-4 4M18 12H8"/></template>
     <template v-else-if="name === 'check'"><path d="m5 12 4 4L19 6"/></template>
     <template v-else-if="name === 'alert'"><path d="M10.3 3.4 2.2 18a2 2 0 0 0 1.8 3h16a2 2 0 0 0 1.8-3L13.7 3.4a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></template>
     <template v-else><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></template>

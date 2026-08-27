@@ -1,26 +1,29 @@
 <script setup lang="ts">
-import { adminResources } from '~/data/admin'
-
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Tổng quan | MIÊN Admin' })
+const { user } = useAdminAuth()
+const greeting = computed(() => {
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' }).format(new Date()))
+  return hour < 11 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'
+})
 
-const stats = [
-  { label: 'Lịch hôm nay', value: '17', note: '14 lịch đã xác nhận', trend: '+3' },
-  { label: 'Khách đang phục vụ', value: '04', note: 'Tại ba phòng trị liệu' },
-  { label: 'Doanh thu hôm nay', value: '18,6tr', note: 'Cập nhật lúc 14:20', trend: '+12,4%' },
-  { label: 'Sản phẩm sắp hết', value: '02', note: 'Cần nhập trong tuần này' },
-]
-
-const appointments = adminResources.bookings.rows.slice(1, 5)
-const lowStock = adminResources.products.rows.filter((row) => Number(row.stock) < 10)
+type DashboardData = { stats: Array<{ label: string; value: string; note: string }>; appointments: Array<Record<string, string | number>>; lowStock: Array<Record<string, string | number>>; customers: Array<Record<string, string | number>> }
+const { data: response, pending, error, refresh } = await useAsyncData('admin-dashboard', () => $fetch<{ data: DashboardData }>('/api/admin/dashboard'))
+const dashboard = computed<DashboardData>(() => response.value?.data ?? { stats: [], appointments: [], lowStock: [], customers: [] })
+const stats = computed(() => pending.value ? Array.from({ length: 4 }, (_, index) => ({ label: ['Lịch hôm nay', 'Khách đang phục vụ', 'Doanh thu hôm nay', 'Sản phẩm sắp hết'][index]!, value: '—', note: 'Đang tải dữ liệu' })) : dashboard.value.stats)
+const appointments = computed(() => dashboard.value.appointments)
+const lowStock = computed(() => dashboard.value.lowStock)
 </script>
 
 <template>
   <section class="mx-auto max-w-[1500px] px-5 py-8 md:px-8 md:py-10 lg:px-10 lg:py-12">
+    <div v-if="error" class="mb-6 flex flex-col gap-3 rounded-sm border border-[#aa746c]/25 bg-[#f1e6e0] px-5 py-4 text-xs text-[#76514a] sm:flex-row sm:items-center sm:justify-between">
+      <span>Chưa thể tải dữ liệu tổng quan từ MySQL.</span><AppButton label="Thử lại" variant="secondary" icon="refresh" @click="() => refresh()" />
+    </div>
     <div class="grid gap-7 border-b border-[#78816f]/20 pb-8 lg:grid-cols-[1fr_auto] lg:items-end">
       <div>
         <p class="text-[0.63rem] font-semibold uppercase tracking-[0.18em] text-[#73806d]">Tổng quan vận hành</p>
-        <h1 class="mt-3 text-3xl font-semibold tracking-[-0.045em] text-[#2f382c] md:text-4xl">Chào buổi sáng, Phương Anh.</h1>
+        <h1 class="mt-3 text-3xl font-semibold tracking-[-0.045em] text-[#2f382c] md:text-4xl">{{ greeting }}, {{ user?.fullName }}.</h1>
         <p class="mt-3 max-w-2xl text-sm leading-6 text-[#6d746a]">Hôm nay MIÊN có nhịp lịch vừa phải. Ba yêu cầu mới đang chờ xác nhận trước 11 giờ.</p>
       </div>
       <AppButton label="Tạo lịch hẹn" icon="plus" to="/admin/dat-lich" />
@@ -49,6 +52,7 @@ const lowStock = adminResources.products.rows.filter((row) => Number(row.stock) 
             </div>
             <StatusBadge :label="String(appointment.status)" />
           </article>
+          <AdminEmptyState v-if="!pending && !appointments.length" title="Không có lịch sắp tới" description="Lịch hẹn trong ngày sẽ xuất hiện tại đây." />
         </div>
       </section>
 
@@ -70,6 +74,7 @@ const lowStock = adminResources.products.rows.filter((row) => Number(row.stock) 
             <span class="text-xs font-semibold tabular-nums text-[#815149]">Còn {{ item.stock }}</span>
           </div>
         </div>
+        <p v-if="!pending && !lowStock.length" class="mt-7 border-y border-[#77816f]/20 py-6 text-xs leading-5 text-[#737a70]">Tồn kho đang ở mức ổn định.</p>
         <AppButton label="Mở quản lý kho" variant="secondary" to="/admin/san-pham" class="mt-6 w-full justify-center" />
       </aside>
     </div>
@@ -82,7 +87,7 @@ const lowStock = adminResources.products.rows.filter((row) => Number(row.stock) 
           <NuxtLink to="/admin/khach-hang" class="admin-inline-link mt-6">Mở danh sách khách <AppIcon name="arrow" :size="14" /></NuxtLink>
         </div>
         <div class="grid gap-3 sm:grid-cols-2">
-          <div v-for="customer in adminResources.customers.rows.slice(0, 4)" :key="customer.id" class="flex items-center gap-4 border-b border-[#78816f]/18 py-4">
+          <div v-for="customer in dashboard.customers" :key="customer.id" class="flex items-center gap-4 border-b border-[#78816f]/18 py-4">
             <span class="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9d4c7] text-[0.68rem] font-semibold text-[#4c5946]">{{ String(customer.name).split(' ').slice(-2).map((part) => part[0]).join('') }}</span>
             <div class="min-w-0">
               <p class="truncate text-xs font-semibold">{{ customer.name }}</p>

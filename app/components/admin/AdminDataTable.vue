@@ -2,9 +2,10 @@
 import type { AdminColumn, AdminRow } from '~/types'
 
 defineProps<{ columns: AdminColumn[]; rows: AdminRow[]; loading?: boolean }>()
-defineEmits<{ edit: [row: AdminRow] }>()
+defineEmits<{ edit: [row: AdminRow]; remove: [row: AdminRow] }>()
 
-function formatCell(value: string | number, type?: AdminColumn['type']) {
+function formatCell(value: string | number | undefined, type?: AdminColumn['type']) {
+  if (value === undefined) return '—'
   if (type === 'money' && typeof value === 'number') return `${new Intl.NumberFormat('vi-VN').format(value)}đ`
   return value
 }
@@ -18,7 +19,7 @@ function formatCell(value: string | number, type?: AdminColumn['type']) {
           <th v-for="column in columns" :key="column.key" class="px-4 py-3 text-[0.62rem] font-semibold uppercase tracking-[0.15em] text-[#7b8277] first:pl-0" :class="column.align === 'right' ? 'text-right' : ''">
             {{ column.label }}
           </th>
-          <th class="w-12 py-3" />
+          <th class="w-20 py-3" />
         </tr>
       </thead>
       <tbody v-if="loading">
@@ -36,9 +37,10 @@ function formatCell(value: string | number, type?: AdminColumn['type']) {
             <span v-else>{{ formatCell(row[column.key], column.type) }}</span>
           </td>
           <td class="py-3 text-right">
-            <button type="button" class="grid size-8 place-items-center rounded-full text-[#6c7566] opacity-40 transition hover:bg-[#dcd8cd] hover:text-[#35402f] group-hover:opacity-100" aria-label="Chỉnh sửa" @click="$emit('edit', row)">
-              <AppIcon name="edit" :size="15" />
-            </button>
+            <div class="flex justify-end gap-1 opacity-40 transition group-hover:opacity-100">
+              <button type="button" class="grid size-8 place-items-center rounded-full text-[#6c7566] transition hover:bg-[#dcd8cd] hover:text-[#35402f]" aria-label="Chỉnh sửa" @click="$emit('edit', row)"><AppIcon name="edit" :size="15" /></button>
+              <button type="button" class="grid size-8 place-items-center rounded-full text-[#866158] transition hover:bg-[#ead8d3] hover:text-[#713d34]" aria-label="Xóa" @click="$emit('remove', row)"><AppIcon name="trash" :size="15" /></button>
+            </div>
           </td>
         </tr>
       </tbody>
