@@ -5,6 +5,10 @@
   "packageManager": "pnpm@11.19.0",
   "scripts": {
     "build": "nuxt build",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
@@ -12,12 +16,15 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.0",
+    "drizzle-orm": "^0.45.2",
+    "mysql2": "^3.24.2",
     "nuxt": "^4.5.2",
     "tailwindcss": "^4.1.0",
     "vue": "^3.5.0",
     "vue-router": "^5.2.0"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.10",
     "typescript": "^5.9.0",
     "vue-tsc": "^3.2.0"
   }

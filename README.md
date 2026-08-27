@@ -2,6 +2,8 @@
 
 Landing page Nuxt 4 cho một thương hiệu spa cao cấp, với form đặt lịch kết nối qua Nitro API.
 
+Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./docs/database.md) để biết schema, migration và các quy ước nghiệp vụ.
+
 ## Các trang chính
 
 - `/` — landing page và form đặt lịch.
