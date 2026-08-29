@@ -1,11 +1,10 @@
-import { and, desc, eq, isNull, like, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, like, ne, sql } from 'drizzle-orm'
 import {
   appointmentServices,
   appointments,
   branches,
   customers,
   employees,
-  inventoryLocations,
   inventoryStocks,
   postCategories,
   posts,
@@ -36,6 +35,17 @@ const number = (body: Payload, key: string) => {
   if (!Number.isFinite(value) || value < 0) throw createError({ statusCode: 422, statusMessage: `Trường ${key} không hợp lệ.` })
   return Math.round(value)
 }
+const imageSource = (body: Payload, key: string) => {
+  const value = text(body, key)!
+  if (value.startsWith('/')) return value
+  try {
+    const url = new URL(value)
+    if (url.protocol === 'http:' || url.protocol === 'https:') return value
+  } catch {
+    // The validation error below gives the client a consistent response.
+  }
+  throw createError({ statusCode: 422, statusMessage: 'Hình ảnh phải là URL http/https hoặc đường dẫn bắt đầu bằng /.' })
+}
 const status = <T extends Record<string, string>>(body: Payload, key: string, map: T, fallback: T[keyof T]) => {
   const label = String(body[key] ?? '')
   return (map[label] ?? fallback) as T[keyof T]
@@ -60,13 +70,6 @@ async function categoryId(db: ReturnType<typeof useDatabase>, table: typeof prod
   if (found) return found.id
   const suffix = Date.now().toString(36)
   const [created] = await db.insert(table).values({ name, slug: `${slugify(name)}-${suffix}` }).$returningId()
-  return insertedId(created)
-}
-
-async function defaultLocation(db: ReturnType<typeof useDatabase>) {
-  const [found] = await db.select({ id: inventoryLocations.id }).from(inventoryLocations).where(eq(inventoryLocations.code, 'MAIN-STOCK')).limit(1)
-  if (found) return found.id
-  const [created] = await db.insert(inventoryLocations).values({ branchId: await defaultBranch(db), code: 'MAIN-STOCK', name: 'Kho chính' }).$returningId()
   return insertedId(created)
 }
 
@@ -101,7 +104,7 @@ async function listProducts() {
   const db = useDatabase()
   const rows = await db.select({
     id: products.id, name: products.name, sku: products.sku, category: productCategories.name,
-    price: products.salePrice, productStatus: products.status, description: products.shortDescription,
+    price: products.salePrice, productStatus: products.status, description: products.shortDescription, image: products.imageUrl,
     stock: sql<number>`coalesce(sum(${inventoryStocks.quantity}), 0)`.mapWith(Number),
   }).from(products)
     .leftJoin(productCategories, eq(products.categoryId, productCategories.id))
@@ -109,25 +112,30 @@ async function listProducts() {
     .where(isNull(products.deletedAt))
     .groupBy(products.id, products.name, products.sku, productCategories.name, products.salePrice, products.status, products.shortDescription)
     .orderBy(desc(products.updatedAt))
-  return rows.map(row => ({ ...row, price: Number(row.price), category: row.category ?? 'Chưa phân nhóm', status: reverse(productStatuses, row.productStatus), productStatus: undefined }))
+  return rows.map(row => ({ ...row, price: Number(row.price), category: row.category ?? 'Chưa phân nhóm', image: row.image ?? '', status: reverse(productStatuses, row.productStatus), productStatus: undefined }))
 }
 
 async function saveProduct(id: number | null, body: Payload) {
   const db = useDatabase()
   const name = text(body, 'name')!
   const category = text(body, 'category')!
-  const stock = number(body, 'stock')
-  const values = { name, sku: text(body, 'sku')!, categoryId: await categoryId(db, productCategories, category), salePrice: String(number(body, 'price')), shortDescription: text(body, 'description', false), status: status(body, 'status', productStatuses, 'active') }
-  const locationId = await defaultLocation(db)
-  let productId = id
-  await db.transaction(async tx => {
-    if (productId) await tx.update(products).set({ ...values, slug: `${slugify(name)}-${productId}` }).where(and(eq(products.id, productId), isNull(products.deletedAt)))
-    else {
-      const [created] = await tx.insert(products).values({ ...values, slug: `${slugify(name)}-${Date.now().toString(36)}` }).$returningId()
-      productId = insertedId(created)
-    }
-    await tx.insert(inventoryStocks).values({ productId: productId!, locationId, quantity: stock }).onDuplicateKeyUpdate({ set: { quantity: stock } })
-  })
+  const sku = text(body, 'sku')!.toUpperCase()
+  if (id) {
+    const [existing] = await db.select({ id: products.id }).from(products).where(and(eq(products.id, id), isNull(products.deletedAt))).limit(1)
+    if (!existing) throw createError({ statusCode: 404, statusMessage: 'Sản phẩm không tồn tại hoặc đã bị xóa.' })
+  }
+  const [duplicate] = await db.select({ id: products.id }).from(products).where(id ? and(eq(products.sku, sku), ne(products.id, id)) : eq(products.sku, sku)).limit(1)
+  if (duplicate) throw createError({ statusCode: 409, statusMessage: 'Mã SKU đã được sử dụng. Vui lòng chọn mã khác.' })
+  const values = { name, sku, imageUrl: imageSource(body, 'image'), categoryId: await categoryId(db, productCategories, category), salePrice: String(number(body, 'price')), shortDescription: text(body, 'description', false), status: status(body, 'status', productStatuses, 'active') }
+  if (id) await db.update(products).set({ ...values, slug: `${slugify(name)}-${id}` }).where(and(eq(products.id, id), isNull(products.deletedAt)))
+  else await db.insert(products).values({ ...values, slug: `${slugify(name)}-${Date.now().toString(36)}` })
+}
+
+async function removeProduct(id: number) {
+  const db = useDatabase()
+  const [existing] = await db.select({ id: products.id }).from(products).where(and(eq(products.id, id), isNull(products.deletedAt))).limit(1)
+  if (!existing) throw createError({ statusCode: 404, statusMessage: 'Sản phẩm không tồn tại hoặc đã bị xóa.' })
+  await db.update(products).set({ deletedAt: new Date() }).where(and(eq(products.id, id), isNull(products.deletedAt)))
 }
 
 async function listEmployees() {
@@ -206,7 +214,7 @@ async function savePost(id: number | null, body: Payload) {
 
 export const adminResources = {
   customers: { list: listCustomers, save: saveCustomer, remove: async (id: number) => useDatabase().update(customers).set({ deletedAt: new Date() }).where(eq(customers.id, id)) },
-  products: { list: listProducts, save: saveProduct, remove: async (id: number) => useDatabase().update(products).set({ deletedAt: new Date() }).where(eq(products.id, id)) },
+  products: { list: listProducts, save: saveProduct, remove: removeProduct },
   bookings: { list: listBookings, save: saveBooking, remove: async (id: number) => useDatabase().delete(appointments).where(eq(appointments.id, id)) },
   employees: { list: listEmployees, save: saveEmployee, remove: async (id: number) => useDatabase().update(employees).set({ deletedAt: new Date() }).where(eq(employees.id, id)) },
   posts: { list: listPosts, save: savePost, remove: async (id: number) => useDatabase().update(posts).set({ deletedAt: new Date() }).where(eq(posts.id, id)) },

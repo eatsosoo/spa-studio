@@ -11,6 +11,7 @@ const deletingRow = ref<AdminRow | null>(null)
 const saving = ref(false)
 const deleting = ref(false)
 const mutationError = ref('')
+const successMessage = ref('')
 type FormOptions = { services: string[]; employees: string[]; productCategories: string[]; postCategories: string[] }
 
 const { data: response, pending, error, refresh } = await useAsyncData(
@@ -51,12 +52,14 @@ function errorMessage(value: unknown) {
 function openCreate() {
   editingRow.value = null
   mutationError.value = ''
+  successMessage.value = ''
   drawerOpen.value = true
 }
 
 function openEdit(row: AdminRow) {
   editingRow.value = { ...row }
   mutationError.value = ''
+  successMessage.value = ''
   drawerOpen.value = true
 }
 
@@ -68,6 +71,7 @@ async function saveRow(value: AdminRow) {
     response.value = await $fetch<{ data: AdminRow[] }>(id ? `/api/admin/${props.config.resource}/${id}` : `/api/admin/${props.config.resource}`, { method: id ? 'PATCH' : 'POST', body: value })
     await refreshOptions()
     drawerOpen.value = false
+    successMessage.value = `Đã ${id ? 'cập nhật' : 'tạo'} ${props.config.singularLabel} thành công.`
   } catch (failure) {
     mutationError.value = errorMessage(failure)
   } finally {
@@ -83,6 +87,7 @@ async function removeRow() {
     await $fetch(`/api/admin/${props.config.resource}/${deletingRow.value.id}`, { method: 'DELETE' })
     deletingRow.value = null
     await refresh()
+    successMessage.value = `Đã xóa ${props.config.singularLabel} khỏi danh sách.`
   } catch (failure) {
     mutationError.value = errorMessage(failure)
   } finally {
@@ -113,6 +118,12 @@ async function removeRow() {
     </div>
 
     <div class="mt-5">
+      <Transition name="fade">
+        <div v-if="successMessage" class="mb-5 flex items-center justify-between gap-4 border-l-2 border-[#64735c] bg-[#e3e9df] px-4 py-3 text-xs text-[#40503a]" role="status">
+          <span class="flex items-center gap-2"><AppIcon name="check" :size="16" />{{ successMessage }}</span>
+          <button type="button" class="grid size-7 shrink-0 place-items-center rounded-full hover:bg-[#d5ded0]" aria-label="Đóng thông báo" @click="successMessage = ''"><AppIcon name="close" :size="14" /></button>
+        </div>
+      </Transition>
       <AdminDataTable v-if="filteredRows.length || pending" :columns="config.columns" :rows="filteredRows" :loading="pending" @edit="openEdit" @remove="deletingRow = $event" />
       <div v-else-if="error" class="rounded-sm border border-[#aa746c]/25 bg-[#f1e6e0] px-6 py-9 text-center">
         <p class="text-sm font-semibold text-[#65443e]">Không tải được dữ liệu</p>
@@ -124,7 +135,7 @@ async function removeRow() {
 
     <div class="mt-5 flex items-center justify-between text-[0.68rem] text-[#7a8176]"><span>Hiển thị {{ filteredRows.length }} / {{ rows.length }} {{ config.singularLabel }}</span><span>Đồng bộ trực tiếp với MySQL</span></div>
 
-    <AdminEntityDrawer :open="drawerOpen" :title="editingRow ? `Chỉnh sửa ${config.singularLabel}` : config.addLabel" :fields="formFields" :value="editingRow" :saving="saving" :api-error="mutationError" @close="drawerOpen = false" @save="saveRow" />
+    <AdminEntityDrawer :open="drawerOpen" :title="editingRow ? `Chỉnh sửa ${config.singularLabel}` : config.addLabel" :fields="formFields" :value="editingRow ?? config.defaults" :saving="saving" :api-error="mutationError" @close="drawerOpen = false" @save="saveRow" />
 
     <Teleport to="body">
       <Transition name="drawer">

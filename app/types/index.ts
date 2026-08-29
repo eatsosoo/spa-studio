@@ -35,7 +35,7 @@ export type AdminFilter = {
 export type AdminFormField = {
   key: string
   label: string
-  type?: 'text' | 'tel' | 'email' | 'number' | 'date' | 'time' | 'textarea' | 'select'
+  type?: 'text' | 'tel' | 'email' | 'url' | 'image' | 'number' | 'date' | 'time' | 'textarea' | 'select'
   placeholder?: string
   helper?: string
   options?: string[]

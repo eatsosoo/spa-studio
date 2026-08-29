@@ -18,6 +18,7 @@ import {
 
 const id = () => bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey()
 const money = (name: string) => decimal(name, { precision: 14, scale: 2 })
+const inventoryQuantity = (name: string) => decimal(name, { precision: 14, scale: 3 })
 const createdAt = () => timestamp('created_at', { mode: 'date' }).defaultNow().notNull()
 const updatedAt = () => timestamp('updated_at', { mode: 'date' }).defaultNow().onUpdateNow().notNull()
 
@@ -261,22 +262,61 @@ export const inventoryLocations = mysqlTable('inventory_locations', {
   createdAt: createdAt(),
 }, (table) => [uniqueIndex('inventory_locations_code_unique').on(table.code)])
 
+export const inventoryDocuments = mysqlTable('inventory_documents', {
+  id: id(),
+  reference: varchar('reference', { length: 40 }).notNull(),
+  type: mysqlEnum('type', ['receipt', 'adjustment', 'transfer']).notNull(),
+  status: mysqlEnum('status', ['draft', 'posted', 'cancelled']).default('draft').notNull(),
+  sourceLocationId: bigint('source_location_id', { mode: 'number', unsigned: true }).references(() => inventoryLocations.id),
+  destinationLocationId: bigint('destination_location_id', { mode: 'number', unsigned: true }).references(() => inventoryLocations.id),
+  supplierName: varchar('supplier_name', { length: 180 }),
+  invoiceNumber: varchar('invoice_number', { length: 80 }),
+  note: varchar('note', { length: 500 }),
+  occurredAt: timestamp('occurred_at', { mode: 'date' }).notNull(),
+  createdBy: bigint('created_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
+  postedBy: bigint('posted_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
+  postedAt: timestamp('posted_at', { mode: 'date' }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (table) => [
+  uniqueIndex('inventory_documents_reference_unique').on(table.reference),
+  index('inventory_documents_status_occurred_idx').on(table.status, table.occurredAt),
+  index('inventory_documents_type_occurred_idx').on(table.type, table.occurredAt),
+])
+
+export const inventoryDocumentItems = mysqlTable('inventory_document_items', {
+  id: id(),
+  documentId: bigint('document_id', { mode: 'number', unsigned: true }).notNull().references(() => inventoryDocuments.id, { onDelete: 'cascade' }),
+  productId: bigint('product_id', { mode: 'number', unsigned: true }).notNull().references(() => products.id),
+  direction: mysqlEnum('direction', ['increase', 'decrease']),
+  quantity: inventoryQuantity('quantity').notNull(),
+  unitCost: money('unit_cost'),
+  reasonCode: varchar('reason_code', { length: 60 }),
+  batchNumber: varchar('batch_number', { length: 80 }),
+  expiryDate: date('expiry_date', { mode: 'string' }),
+  note: varchar('note', { length: 500 }),
+}, (table) => [
+  index('inventory_document_items_document_idx').on(table.documentId),
+  index('inventory_document_items_product_idx').on(table.productId),
+])
+
 export const inventoryStocks = mysqlTable('inventory_stocks', {
   productId: bigint('product_id', { mode: 'number', unsigned: true }).notNull().references(() => products.id, { onDelete: 'cascade' }),
   locationId: bigint('location_id', { mode: 'number', unsigned: true }).notNull().references(() => inventoryLocations.id, { onDelete: 'cascade' }),
-  quantity: int('quantity').default(0).notNull(),
-  reservedQuantity: int('reserved_quantity', { unsigned: true }).default(0).notNull(),
-  minQuantity: int('min_quantity', { unsigned: true }).default(0).notNull(),
+  quantity: inventoryQuantity('quantity').default('0').notNull(),
+  reservedQuantity: inventoryQuantity('reserved_quantity').default('0').notNull(),
+  minQuantity: inventoryQuantity('min_quantity').default('0').notNull(),
   updatedAt: updatedAt(),
 }, (table) => [primaryKey({ columns: [table.productId, table.locationId] })])
 
 export const inventoryTransactions = mysqlTable('inventory_transactions', {
   id: id(),
+  documentItemId: bigint('document_item_id', { mode: 'number', unsigned: true }).references(() => inventoryDocumentItems.id),
   productId: bigint('product_id', { mode: 'number', unsigned: true }).notNull().references(() => products.id),
   locationId: bigint('location_id', { mode: 'number', unsigned: true }).notNull().references(() => inventoryLocations.id),
   type: mysqlEnum('type', ['opening', 'purchase', 'sale', 'service_usage', 'adjustment', 'transfer_in', 'transfer_out', 'return']).notNull(),
-  quantityDelta: int('quantity_delta').notNull(),
-  quantityAfter: int('quantity_after').notNull(),
+  quantityDelta: inventoryQuantity('quantity_delta').notNull(),
+  quantityAfter: inventoryQuantity('quantity_after').notNull(),
   unitCost: money('unit_cost'),
   referenceType: varchar('reference_type', { length: 50 }),
   referenceId: bigint('reference_id', { mode: 'number', unsigned: true }),
@@ -286,6 +326,8 @@ export const inventoryTransactions = mysqlTable('inventory_transactions', {
 }, (table) => [
   index('inventory_transactions_product_location_idx').on(table.productId, table.locationId, table.createdAt),
   index('inventory_transactions_reference_idx').on(table.referenceType, table.referenceId),
+  uniqueIndex('inventory_transactions_document_item_unique').on(table.documentItemId, table.locationId, table.type),
+  uniqueIndex('inventory_transactions_source_unique').on(table.referenceType, table.referenceId, table.locationId, table.type),
 ])
 
 export const promotions = mysqlTable('promotions', {
@@ -448,6 +490,7 @@ export const salesOrders = mysqlTable('sales_orders', {
   id: id(),
   reference: varchar('reference', { length: 30 }).notNull(),
   branchId: bigint('branch_id', { mode: 'number', unsigned: true }).notNull().references(() => branches.id),
+  inventoryLocationId: bigint('inventory_location_id', { mode: 'number', unsigned: true }).references(() => inventoryLocations.id),
   customerId: bigint('customer_id', { mode: 'number', unsigned: true }).references(() => customers.id, { onDelete: 'set null' }),
   status: mysqlEnum('status', ['draft', 'confirmed', 'paid', 'cancelled', 'refunded']).default('draft').notNull(),
   subtotal: money('subtotal').default('0').notNull(),

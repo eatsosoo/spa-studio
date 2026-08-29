@@ -4,6 +4,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-08-26',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
+  components: [{ path: '~/components', pathPrefix: false }],
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL,
     adminBootstrapUsername: process.env.ADMIN_BOOTSTRAP_USERNAME,

@@ -12,6 +12,7 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 - `/admin` — tổng quan quản trị.
 - `/admin/khach-hang` — quản lý khách hàng.
 - `/admin/san-pham` — quản lý sản phẩm và tồn kho.
+- `/admin/kho` — tồn hiện tại, chứng từ nhập/điều chỉnh/điều chuyển và lịch sử kho.
 - `/admin/dat-lich` — quản lý lịch hẹn.
 - `/admin/nhan-vien` — quản lý nhân viên.
 - `/admin/bai-viet` — quản lý bài viết.
@@ -36,6 +37,9 @@ Sau đó mở `http://localhost:3000/admin/dang-nhap` để đăng nhập. Sessi
 - `GET, PATCH, DELETE /api/admin/:resource/:id`
 - Các resource: `customers`, `products`, `bookings`, `employees`, `posts`.
 - `GET /api/admin/dashboard` trả dữ liệu tổng hợp cho trang tổng quan.
+- `GET /api/admin/inventory` trả không gian quản lý tồn, chứng từ và lịch sử kho.
+- `POST /api/admin/inventory/documents` tạo chứng từ kho nháp; các action `/post` và `/cancel` dùng để ghi sổ hoặc hủy chứng từ nháp.
+- `POST /api/admin/orders/:id/pay` chuyển đơn bán hàng sang đã thanh toán và trừ kho trong cùng transaction.
 - `POST /api/booking` ghi yêu cầu đặt lịch từ landing page vào MySQL.
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` xử lý session quản trị.
 - `PATCH /api/auth/profile` cập nhật hồ sơ hoặc đổi mật khẩu.

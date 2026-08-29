@@ -11,6 +11,7 @@ export type AdminResourceConfig = {
   columns: AdminColumn[]
   filters: AdminFilter[]
   fields: AdminFormField[]
+  defaults?: AdminRow
   rows: AdminRow[]
 }
 
@@ -60,6 +61,7 @@ export const adminResources: Record<AdminResourceConfig['resource'], AdminResour
     addLabel: 'Thêm sản phẩm',
     searchPlaceholder: 'Tìm tên hoặc mã SKU',
     singularLabel: 'sản phẩm',
+    defaults: { status: 'Đang bán' },
     columns: [
       { key: 'name', label: 'Sản phẩm' },
       { key: 'sku', label: 'SKU' },
@@ -75,11 +77,11 @@ export const adminResources: Record<AdminResourceConfig['resource'], AdminResour
       { label: 'Tạm ẩn', field: 'status', value: 'Tạm ẩn' },
     ],
     fields: [
-      { key: 'name', label: 'Tên sản phẩm', placeholder: 'Tên hiển thị' },
-      { key: 'sku', label: 'Mã SKU', placeholder: 'MN-XX-000' },
+      { key: 'name', label: 'Tên sản phẩm', placeholder: 'Ví dụ: Serum Sương Mai', helper: 'Tên này sẽ hiển thị trong danh sách quản trị.' },
+      { key: 'sku', label: 'Mã SKU', placeholder: 'MN-XX-000', helper: 'Mã duy nhất, sẽ tự động chuyển thành chữ in hoa.' },
+      { key: 'image', label: 'Hình ảnh sản phẩm', type: 'image', placeholder: 'https://... hoặc /images/ten-anh.jpg', helper: 'Dùng URL ảnh hoặc đường dẫn ảnh trong thư mục public.' },
       { key: 'category', label: 'Nhóm sản phẩm', type: 'select', options: ['Chăm sóc da', 'Chăm sóc cơ thể', 'Nghi thức tại nhà'] },
-      { key: 'stock', label: 'Số lượng tồn', type: 'number' },
-      { key: 'price', label: 'Giá bán', type: 'number' },
+      { key: 'price', label: 'Giá bán', type: 'number', placeholder: '0', helper: 'Nhập giá bằng Việt Nam đồng, không dùng dấu phân cách.' },
       { key: 'status', label: 'Trạng thái', type: 'select', options: ['Đang bán', 'Sắp hết', 'Tạm ẩn'] },
       { key: 'description', label: 'Mô tả ngắn', type: 'textarea', required: false },
     ],

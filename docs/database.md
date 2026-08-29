@@ -13,7 +13,7 @@ Các bảng nghiệp vụ sử dụng InnoDB để hỗ trợ khóa ngoại và 
 | Khách hàng | `customers` | Có điểm thành viên, tổng chi tiêu, nguồn và đồng ý marketing. |
 | Dịch vụ và lịch hẹn | `service_categories`, `services`, `appointments`, `appointment_services` | Snapshot tên/giá dịch vụ giữ nguyên lịch sử kể cả khi danh mục thay đổi. |
 | Chấm công và lương | `attendance_records`, `payroll_periods`, `payrolls`, `payroll_items` | Bảng lương lưu cả số tổng và dòng chi tiết để đối soát. |
-| Sản phẩm và kho | `product_categories`, `products`, `inventory_locations`, `inventory_stocks`, `inventory_transactions` | `inventory_stocks` là số dư nhanh; mọi thay đổi phải đồng thời ghi sổ `inventory_transactions` trong một transaction. |
+| Sản phẩm và kho | `product_categories`, `products`, `inventory_locations`, `inventory_stocks`, `inventory_documents`, `inventory_document_items`, `inventory_transactions` | `inventory_stocks` là số dư nhanh; mọi thay đổi phải đồng thời ghi sổ `inventory_transactions` trong một transaction. Chứng từ nháp chưa làm thay đổi tồn. |
 | Bán hàng | `sales_orders`, `sales_order_items` | Dùng để trừ kho, tính doanh thu và hoa hồng sản phẩm. |
 | Khuyến mãi | `promotions`, `promotion_products`, `promotion_services`, `coupons`, `coupon_redemptions` | Hỗ trợ giảm phần trăm/số tiền, giới hạn lượt và phạm vi sản phẩm/dịch vụ. |
 | Nội dung và hệ thống | `post_categories`, `posts`, `system_settings`, `audit_logs` | Cấu hình lưu JSON, có cờ công khai; thao tác nhạy cảm cần ghi audit log. |
@@ -23,6 +23,9 @@ Các bảng nghiệp vụ sử dụng InnoDB để hỗ trợ khóa ngoại và 
 - Tiền dùng `DECIMAL(14,2)`, không dùng số thực.
 - Ngày giờ nghiệp vụ lưu UTC; `branches.timezone` dùng để hiển thị theo địa phương.
 - Dữ liệu chủ như khách hàng, nhân viên, sản phẩm và bài viết dùng soft delete.
+- Không cập nhật trực tiếp `inventory_stocks.quantity` từ form sản phẩm. Phiếu nhập, điều chỉnh, điều chuyển và thanh toán đơn hàng phải đi qua inventory service, khóa dòng tồn và ghi ledger trong cùng transaction.
+- Chứng từ kho đã `posted` là bất biến. Sai lệch phải được sửa bằng chứng từ điều chỉnh hoặc chứng từ đảo, không sửa lịch sử giao dịch.
+- Tồn khả dụng được tính bằng `quantity - reserved_quantity`; nghiệp vụ xuất không được làm số dư thực tế thấp hơn lượng đang giữ.
 - Mật khẩu phải được hash bằng Argon2id hoặc bcrypt ở tầng service; không bao giờ lưu mật khẩu rõ.
 - Đặt lịch cần kiểm tra trùng `employee_id` theo khoảng `starts_at`/`ends_at` trong transaction trước khi xác nhận.
 - Khi chốt bảng lương, lấy snapshot từ chấm công, hoa hồng dịch vụ/đơn hàng và cấu hình lương có hiệu lực; không tính lại bảng lương đã duyệt nếu không tạo phiên bản điều chỉnh.

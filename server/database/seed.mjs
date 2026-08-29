@@ -124,8 +124,16 @@ try {
       [productCategoryIds[product.category], product.sku, product.name, product.slug, product.description, product.price, product.status],
     )
     await connection.execute(
-      'INSERT INTO inventory_stocks (product_id, location_id, quantity, min_quantity) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE quantity = VALUES(quantity), min_quantity = VALUES(min_quantity)',
+      'INSERT INTO inventory_stocks (product_id, location_id, quantity, min_quantity) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE min_quantity = VALUES(min_quantity)',
       [productId, locationId, product.stock, product.min],
+    )
+    await connection.execute(
+      `INSERT INTO inventory_transactions (product_id, location_id, type, quantity_delta, quantity_after, reference_type, reference_id, note)
+       SELECT ?, ?, 'opening', ?, ?, 'seed_opening', ?, 'Tồn đầu kỳ từ dữ liệu mẫu'
+       WHERE NOT EXISTS (
+         SELECT 1 FROM inventory_transactions WHERE reference_type = 'seed_opening' AND reference_id = ? AND location_id = ? AND type = 'opening'
+       )`,
+      [productId, locationId, product.stock, product.stock, productId, productId, locationId],
     )
   }
 

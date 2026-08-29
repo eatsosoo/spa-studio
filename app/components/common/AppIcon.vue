@@ -7,6 +7,7 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-if="name === 'dashboard'"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></template>
     <template v-else-if="name === 'users'"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></template>
     <template v-else-if="name === 'products'"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M3 12l9 5 9-5M3 16l9 5 9-5"/></template>
+    <template v-else-if="name === 'warehouse'"><path d="m3 9 9-6 9 6v11H3Z"/><path d="M7 20v-7h10v7M3 9h18M9 16h6"/></template>
     <template v-else-if="name === 'calendar'"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></template>
     <template v-else-if="name === 'staff'"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0M18 4l1.5 1.5L22 3"/></template>
     <template v-else-if="name === 'posts'"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5"/></template>
@@ -22,6 +23,8 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-else-if="name === 'external'"><path d="M15 3h6v6M10 14 21 3M18 13v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h7"/></template>
     <template v-else-if="name === 'chevron'"><path d="m9 18 6-6-6-6"/></template>
     <template v-else-if="name === 'chevron-down'"><path d="m6 9 6 6 6-6"/></template>
+    <template v-else-if="name === 'sort'"><path d="M8 7h9M8 12h7M8 17h5"/><path d="m4 5 2 2-2 2M4 15l2 2-2 2"/></template>
+    <template v-else-if="name === 'image'"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></template>
     <template v-else-if="name === 'mail'"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></template>
     <template v-else-if="name === 'lock'"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></template>
     <template v-else-if="name === 'eye'"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></template>

@@ -8,6 +8,7 @@ const items = [
   { label: 'Tổng quan', to: '/admin', icon: 'dashboard' },
   { label: 'Khách hàng', to: '/admin/khach-hang', icon: 'users' },
   { label: 'Sản phẩm', to: '/admin/san-pham', icon: 'products' },
+  { label: 'Quản lý kho', to: '/admin/kho', icon: 'warehouse' },
   { label: 'Đặt lịch', to: '/admin/dat-lich', icon: 'calendar' },
   { label: 'Nhân viên', to: '/admin/nhan-vien', icon: 'staff' },
   { label: 'Bài viết', to: '/admin/bai-viet', icon: 'posts' },

@@ -15,6 +15,13 @@
       "when": 1787850252250,
       "tag": "0001_seed_defaults",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1788003030120,
+      "tag": "0002_tiresome_sugar_man",
+      "breakpoints": true
     }
   ]
 }
