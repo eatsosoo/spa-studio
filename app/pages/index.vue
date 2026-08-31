@@ -5,6 +5,16 @@ type BookingResponse = {
   message: string
 }
 
+type HomePost = {
+  id: number
+  slug: string
+  title: string
+  excerpt: string
+  featuredImage: string | null
+  publishedAt: string | null
+  category: string
+}
+
 const services = [
   {
     number: '01',
@@ -51,6 +61,13 @@ const form = reactive({
 
 const today = new Date().toISOString().slice(0, 10)
 const route = useRoute()
+const { data: postResponse } = await useAsyncData('home-posts', () => $fetch<{ data: HomePost[] }>('/api/posts'))
+const latestPosts = computed(() => (postResponse.value?.data ?? []).slice(0, 3))
+
+function formatPostDate(value: string | null) {
+  if (!value) return ''
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value))
+}
 
 function openBooking(service = '') {
   form.service = service
@@ -257,6 +274,21 @@ onBeforeUnmount(() => {
               Minh Thư, khách của MIÊN từ 2024
             </footer>
           </blockquote>
+        </div>
+      </section>
+
+      <section v-if="latestPosts.length" class="border-t border-[#77806d]/25 px-5 py-24 md:px-10 md:py-32 lg:px-14 lg:py-40">
+        <div class="mx-auto max-w-[1400px]">
+          <div class="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:items-end">
+            <div><p class="section-label">Ghi chép từ MIÊN</p><p class="mt-5 max-w-[34ch] text-sm leading-7 text-[#686f64]">Những điều nhỏ có thể mang về để hiểu và chăm sóc cơ thể mỗi ngày.</p></div>
+            <div class="flex items-end justify-between gap-8"><h2 class="font-display text-5xl font-light leading-[0.98] tracking-[-0.04em] md:text-7xl">Một khoảng nghỉ<br><span class="italic text-[#66715d]">để đọc chậm.</span></h2><NuxtLink to="/bai-viet" class="text-link hidden sm:block">Xem tất cả bài viết</NuxtLink></div>
+          </div>
+          <div class="mt-14 grid gap-x-10 lg:grid-cols-[1.15fr_0.85fr]">
+            <NuxtLink v-for="(post, index) in latestPosts" :key="post.id" :to="`/bai-viet/${post.slug}`" class="group grid gap-6 border-t border-[#77806d]/30 py-8" :class="index === 0 ? 'lg:row-span-2 lg:mr-8' : 'sm:grid-cols-[150px_1fr] sm:items-center'">
+              <div class="overflow-hidden bg-[#ddd7ca]" :class="index === 0 ? 'aspect-[16/10]' : 'aspect-[4/3]'"><img :src="post.featuredImage || '/images/mien-spa-hero.png'" :alt="post.title" class="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.025]"></div>
+              <div><p class="text-[0.63rem] font-semibold uppercase tracking-[0.15em] text-[#737b6e]">{{ post.category }} · {{ formatPostDate(post.publishedAt) }}</p><h3 class="mt-3 font-display font-light leading-[1.06] tracking-[-0.035em]" :class="index === 0 ? 'text-4xl md:text-5xl' : 'text-3xl'">{{ post.title }}</h3><p v-if="index === 0" class="mt-4 max-w-[55ch] text-sm leading-7 text-[#6a7166]">{{ post.excerpt }}</p></div>
+            </NuxtLink>
+          </div>
         </div>
       </section>
 

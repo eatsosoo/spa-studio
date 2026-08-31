@@ -3,6 +3,9 @@ import type { AdminRow } from '~/types'
 import type { AdminResourceConfig } from '~/data/admin'
 
 const props = defineProps<{ config: AdminResourceConfig }>()
+const route = useRoute()
+const router = useRouter()
+const isPosts = computed(() => props.config.resource === 'posts')
 const search = ref('')
 const activeFilter = ref(0)
 const drawerOpen = ref(false)
@@ -11,7 +14,7 @@ const deletingRow = ref<AdminRow | null>(null)
 const saving = ref(false)
 const deleting = ref(false)
 const mutationError = ref('')
-const successMessage = ref('')
+const successMessage = ref(route.query.saved === 'updated' ? 'Đã cập nhật bài viết thành công.' : route.query.saved === 'created' ? 'Đã tạo bài viết thành công.' : '')
 type FormOptions = { services: string[]; employees: string[]; productCategories: string[]; postCategories: string[] }
 
 const { data: response, pending, error, refresh } = await useAsyncData(
@@ -50,6 +53,10 @@ function errorMessage(value: unknown) {
 }
 
 function openCreate() {
+  if (isPosts.value) {
+    router.push('/admin/bai-viet/moi')
+    return
+  }
   editingRow.value = null
   mutationError.value = ''
   successMessage.value = ''
@@ -57,6 +64,10 @@ function openCreate() {
 }
 
 function openEdit(row: AdminRow) {
+  if (isPosts.value) {
+    router.push(`/admin/bai-viet/${row.id}`)
+    return
+  }
   editingRow.value = { ...row }
   mutationError.value = ''
   successMessage.value = ''
@@ -135,7 +146,7 @@ async function removeRow() {
 
     <div class="mt-5 flex items-center justify-between text-[0.68rem] text-[#7a8176]"><span>Hiển thị {{ filteredRows.length }} / {{ rows.length }} {{ config.singularLabel }}</span><span>Đồng bộ trực tiếp với MySQL</span></div>
 
-    <AdminEntityDrawer :open="drawerOpen" :title="editingRow ? `Chỉnh sửa ${config.singularLabel}` : config.addLabel" :fields="formFields" :value="editingRow ?? config.defaults" :saving="saving" :api-error="mutationError" @close="drawerOpen = false" @save="saveRow" />
+    <AdminEntityDrawer v-if="!isPosts" :open="drawerOpen" :title="editingRow ? `Chỉnh sửa ${config.singularLabel}` : config.addLabel" :fields="formFields" :value="editingRow ?? config.defaults" :saving="saving" :api-error="mutationError" @close="drawerOpen = false" @save="saveRow" />
 
     <Teleport to="body">
       <Transition name="drawer">

@@ -17,6 +17,7 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-else-if="name === 'menu'"><path d="M4 7h16M4 12h16M4 17h16"/></template>
     <template v-else-if="name === 'close'"><path d="m6 6 12 12M18 6 6 18"/></template>
     <template v-else-if="name === 'arrow'"><path d="M5 12h14M13 6l6 6-6 6"/></template>
+    <template v-else-if="name === 'arrow-left'"><path d="M19 12H5M11 18l-6-6 6-6"/></template>
     <template v-else-if="name === 'edit'"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></template>
     <template v-else-if="name === 'trash'"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></template>
     <template v-else-if="name === 'refresh'"><path d="M20 6v6h-6M4 18v-6h6M6.5 7.5A7 7 0 0 1 20 12M4 12a7 7 0 0 0 13.5 4.5"/></template>
@@ -32,6 +33,7 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-else-if="name === 'profile'"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></template>
     <template v-else-if="name === 'logout'"><path d="M10 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5M14 8l4 4-4 4M18 12H8"/></template>
     <template v-else-if="name === 'check'"><path d="m5 12 4 4L19 6"/></template>
+    <template v-else-if="name === 'link'"><path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"/></template>
     <template v-else-if="name === 'alert'"><path d="M10.3 3.4 2.2 18a2 2 0 0 0 1.8 3h16a2 2 0 0 0 1.8-3L13.7 3.4a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></template>
     <template v-else><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></template>
   </svg>

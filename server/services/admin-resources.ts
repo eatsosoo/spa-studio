@@ -17,6 +17,7 @@ import {
 } from '../database/schema'
 import { useDatabase } from '../database/client'
 import { consumeInventoryFefo } from './inventory'
+import { sanitizePostContent } from '../utils/post-content'
 
 type Payload = Record<string, unknown>
 type Resource = 'customers' | 'products' | 'bookings' | 'employees' | 'posts'
@@ -146,7 +147,7 @@ async function listEmployees() {
   const rows = await db.select({
     id: employees.id, code: employees.code, name: employees.fullName, role: employees.jobTitle,
     phone: employees.phone, email: employees.email, hireDate: employees.hireDate, employeeStatus: employees.status,
-    appointments: sql<number>`(select count(*) from ${appointmentServices} aps join ${appointments} ap on ap.id = aps.appointment_id where aps.employee_id = ${employees.id} and date(ap.starts_at) = current_date())`.mapWith(Number),
+    appointments: sql<number>`(select count(*) from ${appointmentServices} aps join ${appointments} ap on ap.id = aps.appointment_id where aps.employee_id = ${sql.raw('employees.id')} and date(ap.starts_at) = current_date())`.mapWith(Number),
   }).from(employees).where(isNull(employees.deletedAt)).orderBy(desc(employees.updatedAt))
   return rows.map(row => ({ ...row, role: row.role ?? 'Chưa phân vai trò', phone: row.phone ?? '', email: row.email ?? '', shift: 'Linh hoạt', status: reverse(employeeStatuses, row.employeeStatus), employeeStatus: undefined }))
 }
@@ -220,7 +221,7 @@ async function saveBooking(id: number | null, body: Payload) {
 
 async function listPosts() {
   const db = useDatabase()
-  const rows = await db.select({ id: posts.id, title: posts.title, category: postCategories.name, author: users.username, summary: posts.excerpt, content: posts.content, postStatus: posts.status, updatedAt: posts.updatedAt }).from(posts)
+  const rows = await db.select({ id: posts.id, slug: posts.slug, title: posts.title, category: postCategories.name, author: users.username, summary: posts.excerpt, content: posts.content, featuredImage: posts.featuredImageUrl, metaTitle: posts.metaTitle, metaDescription: posts.metaDescription, postStatus: posts.status, updatedAt: posts.updatedAt }).from(posts)
     .leftJoin(postCategories, eq(posts.categoryId, postCategories.id)).leftJoin(users, eq(posts.authorId, users.id))
     .where(isNull(posts.deletedAt)).orderBy(desc(posts.updatedAt))
   return rows.map(row => ({ ...row, category: row.category ?? 'Chưa phân loại', author: row.author ?? 'MIÊN', summary: row.summary ?? '', updatedAt: dateVi(row.updatedAt), status: reverse(postStatuses, row.postStatus), postStatus: undefined }))
@@ -230,9 +231,25 @@ async function savePost(id: number | null, body: Payload) {
   const db = useDatabase()
   const title = text(body, 'title')!
   const postStatus = status(body, 'status', postStatuses, 'draft')
-  const values = { title, categoryId: await categoryId(db, postCategories, text(body, 'category')!), excerpt: text(body, 'summary', false), content: text(body, 'content')!, status: postStatus, publishedAt: postStatus === 'published' ? new Date() : null }
-  if (id) await db.update(posts).set({ ...values, slug: `${slugify(title)}-${id}` }).where(and(eq(posts.id, id), isNull(posts.deletedAt)))
-  else await db.insert(posts).values({ ...values, slug: `${slugify(title)}-${Date.now().toString(36)}` })
+  const content = sanitizePostContent(text(body, 'content')!)
+  if (!content) throw createError({ statusCode: 422, statusMessage: 'Nội dung bài viết là bắt buộc.' })
+  const values = {
+    title,
+    categoryId: await categoryId(db, postCategories, text(body, 'category')!),
+    excerpt: text(body, 'summary', false),
+    content,
+    featuredImageUrl: text(body, 'featuredImage', false),
+    metaTitle: text(body, 'metaTitle', false),
+    metaDescription: text(body, 'metaDescription', false),
+    status: postStatus,
+  }
+  if (id) {
+    const [existing] = await db.select({ publishedAt: posts.publishedAt }).from(posts).where(and(eq(posts.id, id), isNull(posts.deletedAt))).limit(1)
+    if (!existing) throw createError({ statusCode: 404, statusMessage: 'Không tìm thấy bài viết.' })
+    await db.update(posts).set({ ...values, publishedAt: postStatus === 'published' ? existing.publishedAt ?? new Date() : null }).where(eq(posts.id, id))
+  } else {
+    await db.insert(posts).values({ ...values, slug: `${slugify(title)}-${Date.now().toString(36)}`, publishedAt: postStatus === 'published' ? new Date() : null })
+  }
 }
 
 export const adminResources = {

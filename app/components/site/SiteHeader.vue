@@ -17,6 +17,7 @@ const isMenuOpen = ref(false)
       <nav class="hidden items-center gap-8 text-[0.78rem] font-medium tracking-wide lg:flex" aria-label="Điều hướng chính">
         <NuxtLink to="/#lieu-trinh" class="nav-link">Liệu trình</NuxtLink>
         <NuxtLink to="/san-pham" class="nav-link">Sản phẩm</NuxtLink>
+        <NuxtLink to="/bai-viet" class="nav-link">Bài viết</NuxtLink>
         <NuxtLink to="/#khong-gian" class="nav-link">Không gian</NuxtLink>
         <NuxtLink to="/#cau-chuyen" class="nav-link">Câu chuyện</NuxtLink>
       </nav>
@@ -35,6 +36,7 @@ const isMenuOpen = ref(false)
       <nav v-if="isMenuOpen" class="absolute inset-x-5 top-[82px] grid gap-1 rounded-md border border-[#78816f]/20 bg-[#f3efe5]/95 p-3 shadow-[0_18px_45px_rgba(47,57,42,0.12)] backdrop-blur-xl lg:hidden" aria-label="Điều hướng mobile">
         <NuxtLink to="/#lieu-trinh" class="mobile-nav-link" @click="isMenuOpen = false">Liệu trình</NuxtLink>
         <NuxtLink to="/san-pham" class="mobile-nav-link" @click="isMenuOpen = false">Sản phẩm</NuxtLink>
+        <NuxtLink to="/bai-viet" class="mobile-nav-link" @click="isMenuOpen = false">Bài viết</NuxtLink>
         <NuxtLink to="/#khong-gian" class="mobile-nav-link" @click="isMenuOpen = false">Không gian</NuxtLink>
         <NuxtLink to="/admin" class="mobile-nav-link" @click="isMenuOpen = false">Quản trị</NuxtLink>
       </nav>
