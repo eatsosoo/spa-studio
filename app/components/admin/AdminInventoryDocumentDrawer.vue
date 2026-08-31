@@ -1,10 +1,11 @@
 <script setup lang="ts">
 type ProductOption = { id: number; name: string; sku: string }
 type LocationOption = { id: number; name: string; code: string }
-type DocumentType = 'receipt' | 'adjustment' | 'transfer'
-type LineItem = { productId: number | ''; quantity: number; unitCost: number | ''; direction: 'increase' | 'decrease'; reasonCode: string; batchNumber: string; expiryDate: string; note: string }
+type OrderOption = { id: number; reference: string }
+type DocumentType = 'receipt' | 'adjustment' | 'transfer' | 'return'
+type LineItem = { productId: number | ''; quantity: number; unitCost: number | ''; direction: 'increase' | 'decrease'; reasonCode: string; batchNumber: string; expiryDate: string; disposition: 'sellable' | 'damaged'; note: string }
 
-const props = defineProps<{ open: boolean; products: ProductOption[]; locations: LocationOption[]; saving?: boolean; apiError?: string }>()
+const props = defineProps<{ open: boolean; products: ProductOption[]; locations: LocationOption[]; orders?: OrderOption[]; saving?: boolean; apiError?: string }>()
 const emit = defineEmits<{ close: []; save: [value: Record<string, unknown>, post: boolean] }>()
 const type = ref<DocumentType>('receipt')
 const sourceLocationId = ref<number | ''>('')
@@ -12,6 +13,7 @@ const destinationLocationId = ref<number | ''>('')
 const occurredAt = ref('')
 const supplierName = ref('')
 const invoiceNumber = ref('')
+const sourceOrderId = ref<number | ''>('')
 const note = ref('')
 const items = ref<LineItem[]>([])
 const errors = reactive<Record<string, string>>({})
@@ -23,7 +25,7 @@ function localDateTime() {
 }
 
 function emptyItem(): LineItem {
-  return { productId: '', quantity: 1, unitCost: '', direction: 'increase', reasonCode: '', batchNumber: '', expiryDate: '', note: '' }
+  return { productId: '', quantity: 1, unitCost: '', direction: 'increase', reasonCode: '', batchNumber: '', expiryDate: '', disposition: 'sellable', note: '' }
 }
 
 function reset() {
@@ -33,6 +35,7 @@ function reset() {
   occurredAt.value = localDateTime()
   supplierName.value = ''
   invoiceNumber.value = ''
+  sourceOrderId.value = ''
   note.value = ''
   items.value = [emptyItem()]
   Object.keys(errors).forEach(key => delete errors[key])
@@ -62,6 +65,7 @@ function submit(post: boolean) {
   if (!destinationLocationId.value) errors.destinationLocationId = type.value === 'transfer' ? 'Vui lòng chọn kho nhận.' : 'Vui lòng chọn kho.'
   if (type.value === 'transfer' && !sourceLocationId.value) errors.sourceLocationId = 'Vui lòng chọn kho nguồn.'
   if (type.value === 'transfer' && sourceLocationId.value === destinationLocationId.value) errors.destinationLocationId = 'Kho nhận phải khác kho nguồn.'
+  if (type.value === 'return' && !sourceOrderId.value) errors.sourceOrderId = 'Vui lòng chọn đơn bán gốc.'
   const usedProducts = new Set<number>()
   items.value.forEach((item, index) => {
     if (!item.productId) errors[`product-${index}`] = 'Vui lòng chọn sản phẩm.'
@@ -79,6 +83,7 @@ function submit(post: boolean) {
     occurredAt: new Date(occurredAt.value).toISOString(),
     supplierName: supplierName.value,
     invoiceNumber: invoiceNumber.value,
+    sourceOrderId: sourceOrderId.value || null,
     note: note.value,
     items: items.value,
   }, post)
@@ -99,12 +104,13 @@ function submit(post: boolean) {
           <form class="mt-7 grid gap-6" novalidate @submit.prevent="submit(true)">
             <div v-if="apiError" class="border-l-2 border-[#9a6258] bg-[#f2e4df] px-4 py-3 text-xs leading-5 text-[#7d443c]" role="alert">{{ apiError }}</div>
             <div class="grid gap-4 sm:grid-cols-2">
-              <label class="admin-field"><span>Loại chứng từ</span><select v-model="type"><option value="receipt">Nhập kho</option><option value="adjustment">Điều chỉnh kiểm kê</option><option value="transfer">Điều chuyển kho</option></select></label>
+              <label class="admin-field"><span>Loại chứng từ</span><select v-model="type"><option value="receipt">Nhập kho</option><option value="adjustment">Điều chỉnh kiểm kê</option><option value="transfer">Điều chuyển kho</option><option value="return">Khách trả hàng</option></select></label>
               <label class="admin-field"><span>Thời điểm</span><input v-model="occurredAt" type="datetime-local" :aria-invalid="Boolean(errors.occurredAt)"><small v-if="errors.occurredAt" class="text-[#8b5148]">{{ errors.occurredAt }}</small></label>
               <label v-if="type === 'transfer'" class="admin-field"><span>Kho nguồn</span><select v-model.number="sourceLocationId" :aria-invalid="Boolean(errors.sourceLocationId)"><option value="" disabled>Chọn kho nguồn</option><option v-for="location in locations" :key="location.id" :value="location.id">{{ location.name }} · {{ location.code }}</option></select><small v-if="errors.sourceLocationId" class="text-[#8b5148]">{{ errors.sourceLocationId }}</small></label>
               <label class="admin-field"><span>{{ type === 'transfer' ? 'Kho nhận' : 'Kho' }}</span><select v-model.number="destinationLocationId" :aria-invalid="Boolean(errors.destinationLocationId)"><option value="" disabled>Chọn kho</option><option v-for="location in locations" :key="location.id" :value="location.id">{{ location.name }} · {{ location.code }}</option></select><small v-if="errors.destinationLocationId" class="text-[#8b5148]">{{ errors.destinationLocationId }}</small></label>
               <label v-if="type === 'receipt'" class="admin-field"><span>Nhà cung cấp</span><input v-model="supplierName" placeholder="Tên nhà cung cấp"></label>
               <label v-if="type === 'receipt'" class="admin-field"><span>Số hóa đơn</span><input v-model="invoiceNumber" placeholder="Số hóa đơn hoặc phiếu giao"></label>
+              <label v-if="type === 'return'" class="admin-field sm:col-span-2"><span>Đơn bán gốc</span><select v-model.number="sourceOrderId" :aria-invalid="Boolean(errors.sourceOrderId)"><option value="" disabled>Chọn đơn đã thanh toán</option><option v-for="order in orders" :key="order.id" :value="order.id">{{ order.reference }}</option></select><small v-if="errors.sourceOrderId" class="text-[#8b5148]">{{ errors.sourceOrderId }}</small><small v-else>Hệ thống kiểm tra số lượng trả không vượt quá số đã bán.</small></label>
             </div>
 
             <section class="border-t border-[#78816f]/20 pt-6">
@@ -118,6 +124,7 @@ function submit(post: boolean) {
                   <label v-if="type === 'adjustment'" class="admin-field"><span>Lý do</span><input v-model="item.reasonCode" placeholder="Kiểm kê lệch, hỏng, hết hạn…" :aria-invalid="Boolean(errors[`reason-${index}`])"><small v-if="errors[`reason-${index}`]" class="text-[#8b5148]">{{ errors[`reason-${index}`] }}</small></label>
                   <label v-if="type === 'receipt'" class="admin-field"><span>Số lô</span><input v-model="item.batchNumber" placeholder="Không bắt buộc"></label>
                   <label v-if="type === 'receipt'" class="admin-field"><span>Hạn sử dụng</span><input v-model="item.expiryDate" type="date"></label>
+                  <label v-if="type === 'return'" class="admin-field sm:col-span-2"><span>Tình trạng hàng trả</span><select v-model="item.disposition"><option value="sellable">Còn nguyên vẹn · nhập lại tồn bán</option><option value="damaged">Hư hỏng · chỉ ghi nhận, không nhập tồn</option></select></label>
                   <button v-if="items.length > 1" type="button" class="absolute right-0 top-4 grid size-8 place-items-center rounded-full text-[#855c53] transition hover:bg-[#ead8d3] first:top-0" :aria-label="`Xóa dòng ${index + 1}`" @click="removeItem(index)"><AppIcon name="trash" :size="15" /></button>
                 </div>
               </div>

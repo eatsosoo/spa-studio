@@ -6,14 +6,17 @@ import {
   customers,
   employees,
   inventoryStocks,
+  inventoryLocations,
   postCategories,
   posts,
   productCategories,
   products,
   services,
+  serviceProductUsages,
   users,
 } from '../database/schema'
 import { useDatabase } from '../database/client'
+import { consumeInventoryFefo } from './inventory'
 
 type Payload = Record<string, unknown>
 type Resource = 'customers' | 'products' | 'bookings' | 'employees' | 'posts'
@@ -189,8 +192,28 @@ async function saveBooking(id: number | null, body: Payload) {
       const [created] = await tx.insert(appointments).values({ ...appointmentValues, reference }).$returningId()
       appointmentId = insertedId(created)
     }
-    await tx.delete(appointmentServices).where(eq(appointmentServices.appointmentId, appointmentId!))
-    await tx.insert(appointmentServices).values({ appointmentId: appointmentId!, serviceId: service.id, employeeId: employee?.id, serviceName: service.name, durationMinutes: service.durationMinutes, unitPrice: service.price, finalPrice: service.price, status: appointmentValues.status === 'completed' ? 'completed' : appointmentValues.status === 'cancelled' ? 'cancelled' : 'scheduled' })
+    const lineStatus = appointmentValues.status === 'completed' ? 'completed' : appointmentValues.status === 'cancelled' ? 'cancelled' : 'scheduled'
+    const [existingLine] = await tx.select().from(appointmentServices).where(eq(appointmentServices.appointmentId, appointmentId!)).orderBy(appointmentServices.id).limit(1).for('update')
+    if (existingLine?.inventoryDeductedAt && (existingLine.serviceId !== service.id || lineStatus !== 'completed')) throw createError({ statusCode: 409, statusMessage: 'Dịch vụ đã hoàn tất và đã xuất vật tư nên không thể đổi dịch vụ hoặc chuyển về trạng thái trước đó.' })
+    let appointmentServiceId: number
+    if (existingLine) {
+      appointmentServiceId = existingLine.id
+      await tx.update(appointmentServices).set({ serviceId: service.id, employeeId: employee?.id, serviceName: service.name, durationMinutes: service.durationMinutes, unitPrice: service.price, finalPrice: service.price, status: lineStatus, completedAt: lineStatus === 'completed' ? existingLine.completedAt ?? new Date() : null }).where(eq(appointmentServices.id, existingLine.id))
+    } else {
+      const [createdLine] = await tx.insert(appointmentServices).values({ appointmentId: appointmentId!, serviceId: service.id, employeeId: employee?.id, serviceName: service.name, durationMinutes: service.durationMinutes, unitPrice: service.price, finalPrice: service.price, status: lineStatus, completedAt: lineStatus === 'completed' ? new Date() : null }).$returningId()
+      appointmentServiceId = insertedId(createdLine)
+    }
+    if (lineStatus === 'completed' && !existingLine?.inventoryDeductedAt) {
+      const [location] = await tx.select({ id: inventoryLocations.id }).from(inventoryLocations).where(and(eq(inventoryLocations.branchId, appointmentValues.branchId), eq(inventoryLocations.isActive, true))).orderBy(inventoryLocations.id).limit(1)
+      if (!location) throw createError({ statusCode: 409, statusMessage: 'Chi nhánh chưa có kho để trừ vật tư dịch vụ.' })
+      const usages = await tx.select().from(serviceProductUsages).where(eq(serviceProductUsages.serviceId, service.id))
+      let materialCost = 0
+      for (const usage of usages) {
+        const allocations = await consumeInventoryFefo(tx, { productId: usage.productId, locationId: location.id, quantity: Number(usage.quantity), type: 'service_usage', referenceType: 'appointment_service', referenceId: appointmentServiceId, note: `Vật tư cho lịch hẹn ${appointmentId}` })
+        materialCost += allocations.reduce((sum, allocation) => sum + allocation.quantity * allocation.unitCost, 0)
+      }
+      await tx.update(appointmentServices).set({ inventoryDeductedAt: new Date(), materialCost: materialCost.toFixed(2) }).where(eq(appointmentServices.id, appointmentServiceId))
+    }
   })
   return { reference }
 }

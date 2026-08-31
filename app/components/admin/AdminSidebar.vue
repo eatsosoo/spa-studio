@@ -4,18 +4,43 @@ defineEmits<{ close: [] }>()
 
 const route = useRoute()
 const { user } = useAdminAuth()
-const items = [
+const inventoryOpen = ref(route.path.startsWith('/admin/kho'))
+
+watch(
+  () => route.path,
+  path => {
+    if (path.startsWith('/admin/kho')) inventoryOpen.value = true
+  },
+)
+
+const primaryItems = [
   { label: 'Tổng quan', to: '/admin', icon: 'dashboard' },
   { label: 'Khách hàng', to: '/admin/khach-hang', icon: 'users' },
   { label: 'Sản phẩm', to: '/admin/san-pham', icon: 'products' },
-  { label: 'Quản lý kho', to: '/admin/kho', icon: 'warehouse' },
+]
+const items = [
   { label: 'Đặt lịch', to: '/admin/dat-lich', icon: 'calendar' },
   { label: 'Nhân viên', to: '/admin/nhan-vien', icon: 'staff' },
   { label: 'Bài viết', to: '/admin/bai-viet', icon: 'posts' },
 ]
+const inventoryItems = [
+  { label: 'Tổng quan kho', to: '/admin/kho' },
+  { label: 'Chứng từ nhập xuất', to: '/admin/kho?view=documents' },
+  { label: 'Lô và hạn dùng', to: '/admin/kho?view=lots' },
+  { label: 'Lịch sử biến động', to: '/admin/kho?view=transactions' },
+  { label: 'Định mức dịch vụ', to: '/admin/kho/dinh-muc' },
+  { label: 'Báo cáo kho', to: '/admin/kho/bao-cao' },
+]
 
 function isActive(to: string) {
   return to === '/admin' ? route.path === to : route.path.startsWith(to)
+}
+
+function isInventoryActive(to: string) {
+  const [path, query] = to.split('?')
+  if (route.path !== path) return false
+  const view = new URLSearchParams(query ?? '').get('view')
+  return view ? route.query.view === view : !route.query.view
 }
 </script>
 
@@ -40,6 +65,35 @@ function isActive(to: string) {
     <div class="flex min-h-0 flex-1 flex-col px-3 py-6">
       <p class="mb-3 px-3 text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#99a494]">Vận hành</p>
       <nav class="grid gap-1" aria-label="Điều hướng quản trị">
+        <NuxtLink
+          v-for="item in primaryItems"
+          :key="item.to"
+          :to="item.to"
+          class="admin-nav-item"
+          :class="isActive(item.to) ? 'admin-nav-item--active' : ''"
+          @click="$emit('close')"
+        >
+          <AppIcon :name="item.icon" :size="18" />
+          <span>{{ item.label }}</span>
+          <span v-if="item.to === '/admin/dat-lich'" class="ml-auto rounded-full bg-[#d9dfd2]/15 px-2 py-0.5 text-[0.64rem]">3</span>
+        </NuxtLink>
+        <div class="mt-1">
+          <button
+            type="button"
+            class="admin-nav-item w-full text-left"
+            :class="route.path.startsWith('/admin/kho') ? 'admin-nav-item--active' : ''"
+            :aria-expanded="inventoryOpen"
+            aria-controls="inventory-submenu"
+            @click="inventoryOpen = !inventoryOpen"
+          >
+            <AppIcon name="warehouse" :size="18" />
+            <span>Quản lý kho</span>
+            <AppIcon name="chevron-down" :size="13" class="ml-auto opacity-60 transition-transform" :class="inventoryOpen ? 'rotate-180' : ''" />
+          </button>
+          <div v-show="inventoryOpen" id="inventory-submenu" class="ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3">
+            <NuxtLink v-for="child in inventoryItems" :key="child.to" :to="child.to" class="rounded-sm px-3 py-2 text-[0.69rem] text-[#aeb8aa] transition hover:bg-white/[0.06] hover:text-white" :class="isInventoryActive(child.to) ? 'bg-white/[0.08] text-[#f4f0e8]' : ''" @click="$emit('close')">{{ child.label }}</NuxtLink>
+          </div>
+        </div>
         <NuxtLink
           v-for="item in items"
           :key="item.to"

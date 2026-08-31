@@ -1,6 +1,6 @@
 # Thiết kế database MIÊN Spa
 
-Database sử dụng MySQL 8 và Drizzle ORM. Migration đầu tiên tạo 35 bảng; migration thứ hai khởi tạo chi nhánh mặc định, vai trò, quyền và cấu hình nền.
+Database sử dụng MySQL 8 và Drizzle ORM. Migration thứ ba bổ sung quản lý lô FEFO, giữ hàng, định mức vật tư và giá vốn thực tế.
 
 Các bảng nghiệp vụ sử dụng InnoDB để hỗ trợ khóa ngoại và transaction. Migration đầu tiên chủ động đặt engine của phiên là InnoDB, kể cả khi MySQL server đang mặc định dùng MyISAM.
 
@@ -13,8 +13,9 @@ Các bảng nghiệp vụ sử dụng InnoDB để hỗ trợ khóa ngoại và 
 | Khách hàng | `customers` | Có điểm thành viên, tổng chi tiêu, nguồn và đồng ý marketing. |
 | Dịch vụ và lịch hẹn | `service_categories`, `services`, `appointments`, `appointment_services` | Snapshot tên/giá dịch vụ giữ nguyên lịch sử kể cả khi danh mục thay đổi. |
 | Chấm công và lương | `attendance_records`, `payroll_periods`, `payrolls`, `payroll_items` | Bảng lương lưu cả số tổng và dòng chi tiết để đối soát. |
-| Sản phẩm và kho | `product_categories`, `products`, `inventory_locations`, `inventory_stocks`, `inventory_documents`, `inventory_document_items`, `inventory_transactions` | `inventory_stocks` là số dư nhanh; mọi thay đổi phải đồng thời ghi sổ `inventory_transactions` trong một transaction. Chứng từ nháp chưa làm thay đổi tồn. |
-| Bán hàng | `sales_orders`, `sales_order_items` | Dùng để trừ kho, tính doanh thu và hoa hồng sản phẩm. |
+| Sản phẩm và kho | `product_categories`, `products`, `inventory_locations`, `inventory_stocks`, `inventory_lots`, `inventory_reservations`, `inventory_documents`, `inventory_document_items`, `inventory_transactions` | `inventory_stocks` là số dư tổng hợp; lô là nguồn chi tiết và được xuất FEFO. Chứng từ nháp chưa làm thay đổi tồn. |
+| Dịch vụ và vật tư | `services`, `service_product_usages`, `appointment_services` | Khi một dịch vụ hoàn tất, định mức được xuất FEFO đúng một lần và lưu giá vật tư thực tế. |
+| Bán hàng | `sales_orders`, `sales_order_items` | Xác nhận đơn giữ hàng theo lô; thanh toán tiêu thụ giữ hàng và chốt giá vốn/lợi nhuận gộp. |
 | Khuyến mãi | `promotions`, `promotion_products`, `promotion_services`, `coupons`, `coupon_redemptions` | Hỗ trợ giảm phần trăm/số tiền, giới hạn lượt và phạm vi sản phẩm/dịch vụ. |
 | Nội dung và hệ thống | `post_categories`, `posts`, `system_settings`, `audit_logs` | Cấu hình lưu JSON, có cờ công khai; thao tác nhạy cảm cần ghi audit log. |
 
@@ -25,6 +26,9 @@ Các bảng nghiệp vụ sử dụng InnoDB để hỗ trợ khóa ngoại và 
 - Dữ liệu chủ như khách hàng, nhân viên, sản phẩm và bài viết dùng soft delete.
 - Không cập nhật trực tiếp `inventory_stocks.quantity` từ form sản phẩm. Phiếu nhập, điều chỉnh, điều chuyển và thanh toán đơn hàng phải đi qua inventory service, khóa dòng tồn và ghi ledger trong cùng transaction.
 - Chứng từ kho đã `posted` là bất biến. Sai lệch phải được sửa bằng chứng từ điều chỉnh hoặc chứng từ đảo, không sửa lịch sử giao dịch.
+- Lô được ưu tiên theo hạn dùng gần nhất, sau đó theo ngày nhập. Lô không có hạn dùng được xuất sau các lô có hạn.
+- Hàng trả `sellable` tạo lô mới và tăng tồn; hàng `damaged` chỉ được ghi nhận trên chứng từ, không quay lại tồn khả dụng.
+- Migration `0003` chuyển số tồn hiện hữu thành lô `LEGACY-*`, vì vậy phải chạy migration trước khi dùng luồng xuất FEFO.
 - Tồn khả dụng được tính bằng `quantity - reserved_quantity`; nghiệp vụ xuất không được làm số dư thực tế thấp hơn lượng đang giữ.
 - Mật khẩu phải được hash bằng Argon2id hoặc bcrypt ở tầng service; không bao giờ lưu mật khẩu rõ.
 - Đặt lịch cần kiểm tra trùng `employee_id` theo khoảng `starts_at`/`ends_at` trong transaction trước khi xác nhận.

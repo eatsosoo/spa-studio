@@ -12,7 +12,7 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 - `/admin` — tổng quan quản trị.
 - `/admin/khach-hang` — quản lý khách hàng.
 - `/admin/san-pham` — quản lý sản phẩm và tồn kho.
-- `/admin/kho` — tồn hiện tại, chứng từ nhập/điều chỉnh/điều chuyển và lịch sử kho.
+- `/admin/kho` — tổng quan tồn, cảnh báo và biểu đồ nhập–xuất; submenu mở chứng từ, lô/hạn dùng, lịch sử, định mức dịch vụ và báo cáo giá vốn.
 - `/admin/dat-lich` — quản lý lịch hẹn.
 - `/admin/nhan-vien` — quản lý nhân viên.
 - `/admin/bai-viet` — quản lý bài viết.
@@ -37,9 +37,10 @@ Sau đó mở `http://localhost:3000/admin/dang-nhap` để đăng nhập. Sessi
 - `GET, PATCH, DELETE /api/admin/:resource/:id`
 - Các resource: `customers`, `products`, `bookings`, `employees`, `posts`.
 - `GET /api/admin/dashboard` trả dữ liệu tổng hợp cho trang tổng quan.
-- `GET /api/admin/inventory` trả không gian quản lý tồn, chứng từ và lịch sử kho.
-- `POST /api/admin/inventory/documents` tạo chứng từ kho nháp; các action `/post` và `/cancel` dùng để ghi sổ hoặc hủy chứng từ nháp.
-- `POST /api/admin/orders/:id/pay` chuyển đơn bán hàng sang đã thanh toán và trừ kho trong cùng transaction.
+- `GET /api/admin/inventory` trả tồn, lô FEFO, cảnh báo, chứng từ, lịch sử và số liệu báo cáo.
+- `POST /api/admin/inventory/documents` tạo chứng từ nhập, điều chỉnh, điều chuyển hoặc trả hàng; các action `/post` và `/cancel` dùng để ghi sổ hoặc hủy nháp.
+- `GET /api/admin/inventory/recipes` và `PUT /api/admin/inventory/recipes/:serviceId` quản lý định mức vật tư dịch vụ.
+- Các action `/api/admin/orders/:id/confirm`, `/pay`, `/cancel` lần lượt giữ hàng FEFO, tiêu thụ phần đã giữ và giải phóng giữ hàng.
 - `POST /api/booking` ghi yêu cầu đặt lịch từ landing page vào MySQL.
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` xử lý session quản trị.
 - `PATCH /api/auth/profile` cập nhật hồ sơ hoặc đổi mật khẩu.

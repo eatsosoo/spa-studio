@@ -127,13 +127,22 @@ try {
       'INSERT INTO inventory_stocks (product_id, location_id, quantity, min_quantity) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE min_quantity = VALUES(min_quantity)',
       [productId, locationId, product.stock, product.min],
     )
+    if (product.stock > 0) {
+      await connection.execute(
+        `INSERT INTO inventory_lots (product_id, location_id, batch_number, received_at, initial_quantity, quantity, unit_cost, status)
+         SELECT ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, 0, 'available'
+         WHERE NOT EXISTS (SELECT 1 FROM inventory_lots WHERE product_id = ? AND location_id = ?)`,
+        [productId, locationId, `SEED-${product.sku}`, product.stock, product.stock, productId, locationId],
+      )
+    }
+    const [[lot]] = await connection.query('SELECT id FROM inventory_lots WHERE product_id = ? AND location_id = ? ORDER BY id LIMIT 1', [productId, locationId])
     await connection.execute(
-      `INSERT INTO inventory_transactions (product_id, location_id, type, quantity_delta, quantity_after, reference_type, reference_id, note)
-       SELECT ?, ?, 'opening', ?, ?, 'seed_opening', ?, 'Tồn đầu kỳ từ dữ liệu mẫu'
+      `INSERT INTO inventory_transactions (product_id, location_id, lot_id, type, quantity_delta, quantity_after, reference_type, reference_id, note)
+       SELECT ?, ?, ?, 'opening', ?, ?, 'seed_opening', ?, 'Tồn đầu kỳ từ dữ liệu mẫu'
        WHERE NOT EXISTS (
          SELECT 1 FROM inventory_transactions WHERE reference_type = 'seed_opening' AND reference_id = ? AND location_id = ? AND type = 'opening'
        )`,
-      [productId, locationId, product.stock, product.stock, productId, productId, locationId],
+      [productId, locationId, lot?.id ?? null, product.stock, product.stock, productId, productId, locationId],
     )
   }
 

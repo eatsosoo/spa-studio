@@ -5,8 +5,8 @@
   "packageManager": "pnpm@11.19.0",
   "scripts": {
     "build": "nuxt build",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate && node server/database/postprocess-migration.mjs",
+    "db:migrate": "node server/database/postprocess-migration.mjs && drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:seed": "node --env-file=.env server/database/seed.mjs",
     "db:studio": "drizzle-kit studio",

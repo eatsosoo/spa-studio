@@ -1,0 +1,43 @@
+<script setup lang="ts">
+import type { AdminColumn, AdminRow } from '~/types'
+definePageMeta({ layout: 'admin' })
+useHead({ title: 'Báo cáo kho | MIÊN Admin' })
+type Lot = { id: number; product: string; sku: string; quantity: number; stockValue: number; expiryState: 'none' | 'expired' | 'soon' | 'good' }
+type Workspace = { lots: Lot[]; reports: { movement: Array<{ day: string; incoming: number; outgoing: number }>; inventoryValue: number; revenue30Days: number; cost30Days: number; grossProfit30Days: number; serviceMaterialCost30Days: number; serviceUsage: Array<{ product: string; sku: string; quantity: number; cost: number }> }; alerts: { lowStock: number; expiring: number; expired: number; drafts: number } }
+const { data: response, pending, error, refresh } = await useAsyncData('inventory-report', () => $fetch<{ data: Workspace }>('/api/admin/inventory'))
+const workspace = computed<Workspace>(() => response.value?.data ?? { lots: [], reports: { movement: [], inventoryValue: 0, revenue30Days: 0, cost30Days: 0, grossProfit30Days: 0, serviceMaterialCost30Days: 0, serviceUsage: [] }, alerts: { lowStock: 0, expiring: 0, expired: 0, drafts: 0 } })
+const money = (value: number) => `${value.toLocaleString('vi-VN')} đ`
+const margin = computed(() => workspace.value.reports.revenue30Days ? workspace.value.reports.grossProfit30Days / workspace.value.reports.revenue30Days * 100 : 0)
+const movementMax = computed(() => Math.max(1, ...workspace.value.reports.movement.flatMap(point => [point.incoming, point.outgoing])))
+const productValues = computed(() => {
+  const values = new Map<string, { product: string; sku: string; quantity: number; value: number }>()
+  for (const lot of workspace.value.lots) { const current = values.get(lot.sku) ?? { product: lot.product, sku: lot.sku, quantity: 0, value: 0 }; current.quantity += lot.quantity; current.value += lot.stockValue; values.set(lot.sku, current) }
+  return [...values.values()].sort((a, b) => b.value - a.value)
+})
+const columns: AdminColumn[] = [{ key: 'product', label: 'Sản phẩm' }, { key: 'sku', label: 'SKU' }, { key: 'quantity', label: 'Số lượng', type: 'number', align: 'right' }, { key: 'value', label: 'Giá trị tồn', type: 'money', align: 'right' }, { key: 'share', label: 'Tỷ trọng', type: 'number', align: 'right' }]
+const rows = computed<AdminRow[]>(() => productValues.value.map((row, index) => ({ id: index, ...row, share: workspace.value.reports.inventoryValue ? Math.round(row.value / workspace.value.reports.inventoryValue * 1000) / 10 : 0 })))
+const usageColumns: AdminColumn[] = [{ key: 'product', label: 'Vật tư dịch vụ' }, { key: 'sku', label: 'SKU' }, { key: 'quantity', label: 'Đã dùng', type: 'number', align: 'right' }, { key: 'cost', label: 'Chi phí', type: 'money', align: 'right' }]
+const usageRows = computed<AdminRow[]>(() => workspace.value.reports.serviceUsage.map((row, index) => ({ id: index, ...row })))
+</script>
+
+<template>
+  <section class="mx-auto w-full max-w-[1500px] px-5 py-8 md:px-8 md:py-10 lg:px-10 lg:py-12">
+    <header class="flex flex-col gap-6 border-b border-[#78816f]/20 pb-8 lg:flex-row lg:items-end lg:justify-between"><div><p class="text-[0.63rem] font-semibold uppercase tracking-[0.18em] text-[#73806d]">Giá vốn và hiệu quả</p><h1 class="mt-3 text-3xl font-semibold tracking-[-0.045em] text-[#2f382c] md:text-4xl">Báo cáo kho</h1><p class="mt-3 max-w-2xl text-sm leading-6 text-[#6d746a]">Theo dõi dòng hàng, giá trị tồn và lợi nhuận gộp từ giá vốn FEFO thực tế.</p></div><button type="button" class="grid size-10 place-items-center rounded-full border border-[#78816f]/25 text-[#566150] transition hover:bg-[#e7e3d8] active:scale-[0.96]" aria-label="Làm mới" @click="() => refresh()"><AppIcon name="refresh" :size="17" /></button></header>
+    <div v-if="error" class="mt-6 border-l-2 border-[#9a6258] bg-[#f2e4df] px-4 py-3 text-xs text-[#7d443c]">Không thể tải dữ liệu báo cáo.</div>
+    <template v-else>
+      <div v-if="pending" class="mt-7 grid gap-3 sm:grid-cols-2"><span v-for="index in 4" :key="index" class="h-28 animate-pulse bg-[#e9e5da]" /></div>
+      <div v-else class="mt-7 grid gap-px overflow-hidden border-y border-[#78816f]/20 bg-[#78816f]/20 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="bg-[#f6f3eb] p-5"><p class="text-[0.62rem] uppercase tracking-[0.15em] text-[#7b8277]">Giá trị tồn hiện tại</p><p class="mt-3 text-xl font-semibold tabular-nums text-[#35402f]">{{ money(workspace.reports.inventoryValue) }}</p></div>
+        <div class="bg-[#f6f3eb] p-5"><p class="text-[0.62rem] uppercase tracking-[0.15em] text-[#7b8277]">Doanh thu 30 ngày</p><p class="mt-3 text-xl font-semibold tabular-nums text-[#35402f]">{{ money(workspace.reports.revenue30Days) }}</p></div>
+        <div class="bg-[#f6f3eb] p-5"><p class="text-[0.62rem] uppercase tracking-[0.15em] text-[#7b8277]">Giá vốn bán lẻ 30 ngày</p><p class="mt-3 text-xl font-semibold tabular-nums text-[#76564e]">{{ money(workspace.reports.cost30Days) }}</p><p class="mt-1 text-[0.66rem] text-[#7b8277]">Vật tư dịch vụ {{ money(workspace.reports.serviceMaterialCost30Days) }}</p></div>
+        <div class="bg-[#f6f3eb] p-5"><p class="text-[0.62rem] uppercase tracking-[0.15em] text-[#7b8277]">Lợi nhuận gộp</p><p class="mt-3 text-xl font-semibold tabular-nums text-[#53654d]">{{ money(workspace.reports.grossProfit30Days) }}</p><p class="mt-1 text-[0.66rem] text-[#7b8277]">Biên {{ margin.toLocaleString('vi-VN', { maximumFractionDigits: 1 }) }}%</p></div>
+      </div>
+      <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(260px,0.65fr)]">
+        <section><div><h2 class="text-base font-semibold text-[#35402f]">Dòng hàng 14 ngày</h2><p class="mt-1 text-xs text-[#747c70]">Cột xanh là nhập, cột đất là xuất.</p></div><div v-if="workspace.reports.movement.length" class="mt-7 flex h-52 items-end gap-2 border-b border-[#78816f]/20 px-2"><div v-for="point in workspace.reports.movement" :key="point.day" class="group flex min-w-0 flex-1 items-end justify-center gap-1" :title="`${point.day}: nhập ${point.incoming}, xuất ${point.outgoing}`"><span class="w-3 max-w-[38%] bg-[#66775f] transition-transform duration-300 group-hover:-translate-y-1" :style="{ height: `${Math.max(3, point.incoming / movementMax * 180)}px` }" /><span class="w-3 max-w-[38%] bg-[#a46e62] transition-transform duration-300 group-hover:-translate-y-1" :style="{ height: `${Math.max(3, point.outgoing / movementMax * 180)}px` }" /></div></div><AdminEmptyState v-else title="Chưa có biến động" description="Biểu đồ sẽ xuất hiện sau khi chứng từ được ghi sổ." /></section>
+        <aside class="border-t border-[#78816f]/20 pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><h2 class="text-base font-semibold text-[#35402f]">Cần chú ý</h2><div class="mt-5 divide-y divide-[#78816f]/15"><NuxtLink to="/admin/kho?view=lots" class="flex items-center justify-between py-4 text-xs hover:text-[#53654d]"><span>Lô đã hết hạn</span><strong class="tabular-nums text-[#8a574e]">{{ workspace.alerts.expired }}</strong></NuxtLink><NuxtLink to="/admin/kho?view=lots" class="flex items-center justify-between py-4 text-xs hover:text-[#53654d]"><span>Lô hết hạn trong 30 ngày</span><strong class="tabular-nums text-[#8a574e]">{{ workspace.alerts.expiring }}</strong></NuxtLink><NuxtLink to="/admin/kho" class="flex items-center justify-between py-4 text-xs hover:text-[#53654d]"><span>Sản phẩm dưới mức tối thiểu</span><strong class="tabular-nums">{{ workspace.alerts.lowStock }}</strong></NuxtLink><NuxtLink to="/admin/kho?view=documents" class="flex items-center justify-between py-4 text-xs hover:text-[#53654d]"><span>Chứng từ chờ ghi sổ</span><strong class="tabular-nums">{{ workspace.alerts.drafts }}</strong></NuxtLink></div></aside>
+      </div>
+      <section class="mt-10 border-t border-[#78816f]/20 pt-7"><div><h2 class="text-base font-semibold text-[#35402f]">Cơ cấu giá trị tồn</h2><p class="mt-1 text-xs text-[#747c70]">Sắp xếp theo sản phẩm đang chiếm nhiều vốn nhất.</p></div><div class="mt-5"><AdminDataTable :columns="columns" :rows="rows" :loading="pending" :actions="false" /></div></section>
+      <section class="mt-10 border-t border-[#78816f]/20 pt-7"><div><h2 class="text-base font-semibold text-[#35402f]">Tiêu hao dịch vụ 30 ngày</h2><p class="mt-1 text-xs text-[#747c70]">Số lượng và chi phí vật tư đã xuất khi hoàn tất lịch hẹn.</p></div><div class="mt-5"><AdminDataTable :columns="usageColumns" :rows="usageRows" :loading="pending" :actions="false" /></div><AdminEmptyState v-if="!pending && !usageRows.length" title="Chưa có tiêu hao" description="Dữ liệu sẽ xuất hiện khi lịch hẹn có định mức được hoàn tất." /></section>
+    </template>
+  </section>
+</template>

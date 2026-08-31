@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   decimal,
+  foreignKey,
   index,
   int,
   json,
@@ -265,12 +266,13 @@ export const inventoryLocations = mysqlTable('inventory_locations', {
 export const inventoryDocuments = mysqlTable('inventory_documents', {
   id: id(),
   reference: varchar('reference', { length: 40 }).notNull(),
-  type: mysqlEnum('type', ['receipt', 'adjustment', 'transfer']).notNull(),
+  type: mysqlEnum('type', ['receipt', 'adjustment', 'transfer', 'return']).notNull(),
   status: mysqlEnum('status', ['draft', 'posted', 'cancelled']).default('draft').notNull(),
   sourceLocationId: bigint('source_location_id', { mode: 'number', unsigned: true }).references(() => inventoryLocations.id),
-  destinationLocationId: bigint('destination_location_id', { mode: 'number', unsigned: true }).references(() => inventoryLocations.id),
+  destinationLocationId: bigint('destination_location_id', { mode: 'number', unsigned: true }),
   supplierName: varchar('supplier_name', { length: 180 }),
   invoiceNumber: varchar('invoice_number', { length: 80 }),
+  sourceOrderId: bigint('source_order_id', { mode: 'number', unsigned: true }),
   note: varchar('note', { length: 500 }),
   occurredAt: timestamp('occurred_at', { mode: 'date' }).notNull(),
   createdBy: bigint('created_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
@@ -279,6 +281,11 @@ export const inventoryDocuments = mysqlTable('inventory_documents', {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (table) => [
+  foreignKey({
+    name: 'inventory_documents_destination_location_id_inventory_l_91080e71',
+    columns: [table.destinationLocationId],
+    foreignColumns: [inventoryLocations.id],
+  }),
   uniqueIndex('inventory_documents_reference_unique').on(table.reference),
   index('inventory_documents_status_occurred_idx').on(table.status, table.occurredAt),
   index('inventory_documents_type_occurred_idx').on(table.type, table.occurredAt),
@@ -294,6 +301,7 @@ export const inventoryDocumentItems = mysqlTable('inventory_document_items', {
   reasonCode: varchar('reason_code', { length: 60 }),
   batchNumber: varchar('batch_number', { length: 80 }),
   expiryDate: date('expiry_date', { mode: 'string' }),
+  disposition: mysqlEnum('disposition', ['sellable', 'damaged']).default('sellable').notNull(),
   note: varchar('note', { length: 500 }),
 }, (table) => [
   index('inventory_document_items_document_idx').on(table.documentId),
@@ -309,11 +317,33 @@ export const inventoryStocks = mysqlTable('inventory_stocks', {
   updatedAt: updatedAt(),
 }, (table) => [primaryKey({ columns: [table.productId, table.locationId] })])
 
+export const inventoryLots = mysqlTable('inventory_lots', {
+  id: id(),
+  productId: bigint('product_id', { mode: 'number', unsigned: true }).notNull().references(() => products.id),
+  locationId: bigint('location_id', { mode: 'number', unsigned: true }).notNull().references(() => inventoryLocations.id, { onDelete: 'cascade' }),
+  documentItemId: bigint('document_item_id', { mode: 'number', unsigned: true }).references(() => inventoryDocumentItems.id, { onDelete: 'set null' }),
+  batchNumber: varchar('batch_number', { length: 80 }).notNull(),
+  receivedAt: timestamp('received_at', { mode: 'date' }).notNull(),
+  expiryDate: date('expiry_date', { mode: 'string' }),
+  initialQuantity: inventoryQuantity('initial_quantity').notNull(),
+  quantity: inventoryQuantity('quantity').notNull(),
+  reservedQuantity: inventoryQuantity('reserved_quantity').default('0').notNull(),
+  unitCost: money('unit_cost').default('0').notNull(),
+  status: mysqlEnum('status', ['available', 'depleted', 'blocked']).default('available').notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (table) => [
+  index('inventory_lots_fefo_idx').on(table.productId, table.locationId, table.status, table.expiryDate, table.receivedAt),
+  index('inventory_lots_expiry_idx').on(table.expiryDate, table.status),
+  uniqueIndex('inventory_lots_document_location_unique').on(table.documentItemId, table.locationId, table.batchNumber),
+])
+
 export const inventoryTransactions = mysqlTable('inventory_transactions', {
   id: id(),
-  documentItemId: bigint('document_item_id', { mode: 'number', unsigned: true }).references(() => inventoryDocumentItems.id),
+  documentItemId: bigint('document_item_id', { mode: 'number', unsigned: true }),
   productId: bigint('product_id', { mode: 'number', unsigned: true }).notNull().references(() => products.id),
   locationId: bigint('location_id', { mode: 'number', unsigned: true }).notNull().references(() => inventoryLocations.id),
+  lotId: bigint('lot_id', { mode: 'number', unsigned: true }).references(() => inventoryLots.id, { onDelete: 'set null' }),
   type: mysqlEnum('type', ['opening', 'purchase', 'sale', 'service_usage', 'adjustment', 'transfer_in', 'transfer_out', 'return']).notNull(),
   quantityDelta: inventoryQuantity('quantity_delta').notNull(),
   quantityAfter: inventoryQuantity('quantity_after').notNull(),
@@ -324,10 +354,43 @@ export const inventoryTransactions = mysqlTable('inventory_transactions', {
   performedBy: bigint('performed_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
 }, (table) => [
+  foreignKey({
+    name: 'inventory_transactions_document_item_id_inventory_docum_1f96f99b',
+    columns: [table.documentItemId],
+    foreignColumns: [inventoryDocumentItems.id],
+  }),
   index('inventory_transactions_product_location_idx').on(table.productId, table.locationId, table.createdAt),
   index('inventory_transactions_reference_idx').on(table.referenceType, table.referenceId),
-  uniqueIndex('inventory_transactions_document_item_unique').on(table.documentItemId, table.locationId, table.type),
-  uniqueIndex('inventory_transactions_source_unique').on(table.referenceType, table.referenceId, table.locationId, table.type),
+  uniqueIndex('inventory_transactions_document_item_unique').on(table.documentItemId, table.locationId, table.lotId, table.type),
+  uniqueIndex('inventory_transactions_source_unique').on(table.referenceType, table.referenceId, table.locationId, table.lotId, table.type),
+])
+
+export const inventoryReservations = mysqlTable('inventory_reservations', {
+  id: id(),
+  orderItemId: bigint('order_item_id', { mode: 'number', unsigned: true }).notNull(),
+  productId: bigint('product_id', { mode: 'number', unsigned: true }).notNull().references(() => products.id),
+  locationId: bigint('location_id', { mode: 'number', unsigned: true }).notNull().references(() => inventoryLocations.id),
+  lotId: bigint('lot_id', { mode: 'number', unsigned: true }).notNull().references(() => inventoryLots.id),
+  quantity: inventoryQuantity('quantity').notNull(),
+  status: mysqlEnum('status', ['active', 'consumed', 'released']).default('active').notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (table) => [
+  index('inventory_reservations_order_idx').on(table.orderItemId, table.status),
+  uniqueIndex('inventory_reservations_order_lot_unique').on(table.orderItemId, table.lotId),
+])
+
+export const serviceProductUsages = mysqlTable('service_product_usages', {
+  id: id(),
+  serviceId: bigint('service_id', { mode: 'number', unsigned: true }).notNull().references(() => services.id, { onDelete: 'cascade' }),
+  productId: bigint('product_id', { mode: 'number', unsigned: true }).notNull().references(() => products.id, { onDelete: 'cascade' }),
+  quantity: inventoryQuantity('quantity').notNull(),
+  note: varchar('note', { length: 255 }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (table) => [
+  uniqueIndex('service_product_usages_service_product_unique').on(table.serviceId, table.productId),
+  index('service_product_usages_product_idx').on(table.productId),
 ])
 
 export const promotions = mysqlTable('promotions', {
@@ -414,6 +477,8 @@ export const appointmentServices = mysqlTable('appointment_services', {
   status: mysqlEnum('status', ['scheduled', 'in_progress', 'completed', 'cancelled']).default('scheduled').notNull(),
   startedAt: timestamp('started_at', { mode: 'date' }),
   completedAt: timestamp('completed_at', { mode: 'date' }),
+  inventoryDeductedAt: timestamp('inventory_deducted_at', { mode: 'date' }),
+  materialCost: money('material_cost').default('0').notNull(),
 }, (table) => [
   index('appointment_services_appointment_idx').on(table.appointmentId),
   index('appointment_services_employee_idx').on(table.employeeId),
@@ -496,6 +561,7 @@ export const salesOrders = mysqlTable('sales_orders', {
   subtotal: money('subtotal').default('0').notNull(),
   discountAmount: money('discount_amount').default('0').notNull(),
   totalAmount: money('total_amount').default('0').notNull(),
+  totalCost: money('total_cost').default('0').notNull(),
   promotionId: bigint('promotion_id', { mode: 'number', unsigned: true }).references(() => promotions.id, { onDelete: 'set null' }),
   couponId: bigint('coupon_id', { mode: 'number', unsigned: true }).references(() => coupons.id, { onDelete: 'set null' }),
   soldBy: bigint('sold_by', { mode: 'number', unsigned: true }).references(() => employees.id, { onDelete: 'set null' }),
@@ -517,6 +583,8 @@ export const salesOrderItems = mysqlTable('sales_order_items', {
   unitPrice: money('unit_price').notNull(),
   discountAmount: money('discount_amount').default('0').notNull(),
   totalAmount: money('total_amount').notNull(),
+  unitCost: money('unit_cost').default('0').notNull(),
+  costAmount: money('cost_amount').default('0').notNull(),
   commissionAmount: money('commission_amount').default('0').notNull(),
 }, (table) => [index('sales_order_items_order_idx').on(table.orderId)])
 
