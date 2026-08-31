@@ -17,6 +17,7 @@ const primaryItems = [
   { label: 'Tổng quan', to: '/admin', icon: 'dashboard' },
   { label: 'Khách hàng', to: '/admin/khach-hang', icon: 'users' },
   { label: 'Sản phẩm', to: '/admin/san-pham', icon: 'products' },
+  { label: 'Liệu trình', to: '/admin/lieu-trinh', icon: 'services' },
 ]
 const items = [
   { label: 'Đặt lịch', to: '/admin/dat-lich', icon: 'calendar' },

@@ -18,7 +18,7 @@ const saving = ref(false)
 const deleting = ref(false)
 const mutationError = ref('')
 const successMessage = ref(route.query.saved === 'updated' ? 'Đã cập nhật bài viết thành công.' : route.query.saved === 'created' ? 'Đã tạo bài viết thành công.' : '')
-type FormOptions = { services: string[]; employees: string[]; productCategories: string[]; postCategories: string[] }
+type FormOptions = { services: string[]; employees: string[]; productCategories: string[]; serviceCategories: string[]; postCategories: string[] }
 const emptyMeta: PaginationMeta = { page: 1, pageSize: 10, total: 0, totalPages: 1, from: 0, to: 0 }
 const activeFilterConfig = computed(() => props.config.filters[activeFilter.value])
 let searchTimer: ReturnType<typeof setTimeout> | undefined
@@ -56,6 +56,7 @@ const formFields = computed(() => props.config.fields.map((field) => {
   if (props.config.resource === 'bookings' && field.key === 'service' && options.services.length) return { ...field, options: options.services }
   if (props.config.resource === 'bookings' && field.key === 'staff' && options.employees.length) return { ...field, options: options.employees }
   if (props.config.resource === 'products' && field.key === 'category' && options.productCategories.length) return { ...field, options: options.productCategories }
+  if (props.config.resource === 'services' && field.key === 'category' && options.serviceCategories.length) return { ...field, options: options.serviceCategories }
   if (props.config.resource === 'posts' && field.key === 'category' && options.postCategories.length) return { ...field, options: options.postCategories }
   return field
 }))

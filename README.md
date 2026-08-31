@@ -12,6 +12,7 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 - `/admin` — tổng quan quản trị.
 - `/admin/khach-hang` — quản lý khách hàng.
 - `/admin/san-pham` — quản lý sản phẩm và tồn kho.
+- `/admin/lieu-trinh` — quản lý liệu trình, thời lượng, giá bán và thời gian đệm.
 - `/admin/kho` — tổng quan tồn, cảnh báo và biểu đồ nhập–xuất; submenu mở chứng từ, lô/hạn dùng, lịch sử, định mức dịch vụ và báo cáo giá vốn.
 - `/admin/dat-lich` — quản lý lịch hẹn.
 - `/admin/nhan-vien` — quản lý nhân viên.

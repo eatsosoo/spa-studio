@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, like, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, isNull, like, lt, ne, sql } from 'drizzle-orm'
 import {
   appointmentServices,
   appointments,
@@ -11,6 +11,7 @@ import {
   posts,
   productCategories,
   products,
+  serviceCategories,
   services,
   serviceProductUsages,
   users,
@@ -20,7 +21,7 @@ import { consumeInventoryFefo } from './inventory'
 import { sanitizePostContent } from '../utils/post-content'
 
 type Payload = Record<string, unknown>
-type Resource = 'customers' | 'products' | 'bookings' | 'employees' | 'posts'
+type Resource = 'customers' | 'products' | 'services' | 'bookings' | 'employees' | 'posts'
 
 const customerStatuses = { 'Đang hoạt động': 'active', 'Tạm ngưng': 'inactive', 'Đã chặn': 'blocked' } as const
 const productStatuses = { 'Đang bán': 'active', 'Sắp hết': 'out_of_stock', 'Tạm ẩn': 'inactive' } as const
@@ -86,6 +87,14 @@ async function serviceByName(db: ReturnType<typeof useDatabase>, name: string) {
   return result!
 }
 
+async function serviceCategoryId(db: ReturnType<typeof useDatabase>, name: string) {
+  const [found] = await db.select({ id: serviceCategories.id }).from(serviceCategories).where(eq(serviceCategories.name, name)).limit(1)
+  if (found) return found.id
+  const suffix = Date.now().toString(36)
+  const [created] = await db.insert(serviceCategories).values({ name, slug: `${slugify(name)}-${suffix}`, isActive: true }).$returningId()
+  return insertedId(created)
+}
+
 async function listCustomers() {
   const db = useDatabase()
   const rows = await db.select({
@@ -142,6 +151,59 @@ async function removeProduct(id: number) {
   await db.update(products).set({ deletedAt: new Date() }).where(and(eq(products.id, id), isNull(products.deletedAt)))
 }
 
+async function listServices() {
+  const db = useDatabase()
+  const rows = await db.select({
+    id: services.id,
+    code: services.code,
+    name: services.name,
+    category: serviceCategories.name,
+    durationMinutes: services.durationMinutes,
+    bufferMinutes: services.bufferMinutes,
+    price: services.price,
+    description: services.description,
+    isActive: services.isActive,
+  }).from(services)
+    .leftJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+    .where(isNull(services.deletedAt))
+    .orderBy(desc(services.updatedAt))
+  return rows.map(row => ({ ...row, category: row.category ?? 'Chưa phân nhóm', price: Number(row.price), description: row.description ?? '', status: row.isActive ? 'Đang hoạt động' : 'Tạm ngưng', isActive: undefined }))
+}
+
+async function saveService(id: number | null, body: Payload) {
+  const db = useDatabase()
+  const name = text(body, 'name')!
+  const code = text(body, 'code')!.toUpperCase()
+  const durationMinutes = number(body, 'durationMinutes')
+  const bufferMinutes = number(body, 'bufferMinutes')
+  if (durationMinutes <= 0) throw createError({ statusCode: 422, statusMessage: 'Thời lượng liệu trình phải lớn hơn 0 phút.' })
+  if (id) {
+    const [existing] = await db.select({ id: services.id }).from(services).where(and(eq(services.id, id), isNull(services.deletedAt))).limit(1)
+    if (!existing) throw createError({ statusCode: 404, statusMessage: 'Liệu trình không tồn tại hoặc đã bị xóa.' })
+  }
+  const [duplicate] = await db.select({ id: services.id }).from(services).where(id ? and(eq(services.code, code), ne(services.id, id)) : eq(services.code, code)).limit(1)
+  if (duplicate) throw createError({ statusCode: 409, statusMessage: 'Mã liệu trình đã được sử dụng.' })
+  const values = {
+    categoryId: await serviceCategoryId(db, text(body, 'category')!),
+    code,
+    name,
+    description: text(body, 'description', false),
+    durationMinutes,
+    bufferMinutes,
+    price: String(number(body, 'price')),
+    isActive: String(body.status ?? '') !== 'Tạm ngưng',
+  }
+  if (id) await db.update(services).set({ ...values, slug: `${slugify(name)}-${id}` }).where(and(eq(services.id, id), isNull(services.deletedAt)))
+  else await db.insert(services).values({ ...values, slug: `${slugify(name)}-${Date.now().toString(36)}` })
+}
+
+async function removeService(id: number) {
+  const db = useDatabase()
+  const [existing] = await db.select({ id: services.id }).from(services).where(and(eq(services.id, id), isNull(services.deletedAt))).limit(1)
+  if (!existing) throw createError({ statusCode: 404, statusMessage: 'Liệu trình không tồn tại hoặc đã bị xóa.' })
+  await db.update(services).set({ deletedAt: new Date(), isActive: false }).where(eq(services.id, id))
+}
+
 async function listEmployees() {
   const db = useDatabase()
   const rows = await db.select({
@@ -170,6 +232,50 @@ async function listBookings() {
     .leftJoin(employees, eq(appointmentServices.employeeId, employees.id))
     .orderBy(desc(appointments.startsAt))
   return rows.map(row => ({ id: row.id, customer: row.customer, phone: row.phone, date: dateInput(row.startsAt), time: timeInput(row.startsAt), service: row.service ?? 'Chưa chọn', staff: row.staff ?? 'Chưa phân công', room: 'Chưa xếp', note: row.note ?? '', total: Number(row.total), status: reverse(bookingStatuses, row.bookingStatus) }))
+}
+
+export async function getDailyBookingSchedule(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw createError({ statusCode: 400, statusMessage: 'Ngày xem lịch không hợp lệ.' })
+  const startsAt = new Date(`${value}T00:00:00+07:00`)
+  if (Number.isNaN(startsAt.getTime()) || dateInput(startsAt) !== value) throw createError({ statusCode: 400, statusMessage: 'Ngày xem lịch không hợp lệ.' })
+  const endsAt = new Date(startsAt.getTime() + 24 * 60 * 60 * 1000)
+  const db = useDatabase()
+  const [employeeRows, bookingRows] = await Promise.all([
+    db.select({ id: employees.id, name: employees.fullName, role: employees.jobTitle, employeeStatus: employees.status })
+      .from(employees)
+      .where(and(isNull(employees.deletedAt), ne(employees.status, 'terminated')))
+      .orderBy(asc(employees.fullName)),
+    db.select({
+      id: appointments.id, reference: appointments.reference, customer: appointments.customerName, phone: appointments.customerPhone,
+      startsAt: appointments.startsAt, endsAt: appointments.endsAt, bookingStatus: appointments.status, note: appointments.notes,
+      service: appointmentServices.serviceName, durationMinutes: appointmentServices.durationMinutes,
+      staffId: appointmentServices.employeeId, staff: employees.fullName,
+    }).from(appointments)
+      .leftJoin(appointmentServices, eq(appointments.id, appointmentServices.appointmentId))
+      .leftJoin(employees, eq(appointmentServices.employeeId, employees.id))
+      .where(and(gte(appointments.startsAt, startsAt), lt(appointments.startsAt, endsAt)))
+      .orderBy(asc(appointments.startsAt)),
+  ])
+
+  return {
+    date: value,
+    employees: employeeRows.map(row => ({ id: row.id, name: row.name, role: row.role ?? 'Chưa phân vai trò', status: reverse(employeeStatuses, row.employeeStatus) })),
+    bookings: bookingRows.map(row => ({
+      id: row.id,
+      reference: row.reference,
+      customer: row.customer,
+      phone: row.phone,
+      date: dateInput(row.startsAt),
+      time: timeInput(row.startsAt),
+      endTime: timeInput(row.endsAt),
+      durationMinutes: row.durationMinutes ?? Math.max(30, Math.round((row.endsAt.getTime() - row.startsAt.getTime()) / 60_000)),
+      service: row.service ?? 'Chưa chọn',
+      staffId: row.staffId ?? 0,
+      staff: row.staff ?? 'Chưa phân công',
+      note: row.note ?? '',
+      status: reverse(bookingStatuses, row.bookingStatus),
+    })),
+  }
 }
 
 async function saveBooking(id: number | null, body: Payload) {
@@ -255,6 +361,7 @@ async function savePost(id: number | null, body: Payload) {
 export const adminResources = {
   customers: { list: listCustomers, save: saveCustomer, remove: async (id: number) => useDatabase().update(customers).set({ deletedAt: new Date() }).where(eq(customers.id, id)) },
   products: { list: listProducts, save: saveProduct, remove: removeProduct },
+  services: { list: listServices, save: saveService, remove: removeService },
   bookings: { list: listBookings, save: saveBooking, remove: async (id: number) => useDatabase().delete(appointments).where(eq(appointments.id, id)) },
   employees: { list: listEmployees, save: saveEmployee, remove: async (id: number) => useDatabase().update(employees).set({ deletedAt: new Date() }).where(eq(employees.id, id)) },
   posts: { list: listPosts, save: savePost, remove: async (id: number) => useDatabase().update(posts).set({ deletedAt: new Date() }).where(eq(posts.id, id)) },

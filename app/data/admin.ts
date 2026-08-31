@@ -1,7 +1,7 @@
 import type { AdminColumn, AdminFilter, AdminFormField, AdminRow } from '~/types'
 
 export type AdminResourceConfig = {
-  resource: 'customers' | 'products' | 'bookings' | 'employees' | 'posts'
+  resource: 'customers' | 'products' | 'services' | 'bookings' | 'employees' | 'posts'
   title: string
   eyebrow: string
   description: string
@@ -92,6 +92,41 @@ export const adminResources: Record<AdminResourceConfig['resource'], AdminResour
       { id: 4, name: 'Balm Thả Lỏng', sku: 'MN-BT-045', category: 'Nghi thức tại nhà', stock: 0, price: 460000, status: 'Tạm ẩn' },
       { id: 5, name: 'Muối Ngâm Chân Tĩnh', sku: 'MN-MT-240', category: 'Nghi thức tại nhà', stock: 9, price: 390000, status: 'Sắp hết' },
     ],
+  },
+  services: {
+    resource: 'services',
+    title: 'Liệu trình',
+    eyebrow: 'Danh mục chăm sóc',
+    description: 'Quản lý thời lượng, giá bán và thời gian chuẩn bị giữa các lịch hẹn.',
+    addLabel: 'Thêm liệu trình',
+    searchPlaceholder: 'Tìm tên hoặc mã liệu trình',
+    singularLabel: 'liệu trình',
+    columns: [
+      { key: 'code', label: 'Mã' },
+      { key: 'name', label: 'Liệu trình' },
+      { key: 'category', label: 'Nhóm' },
+      { key: 'durationMinutes', label: 'Thời lượng', type: 'number', align: 'right' },
+      { key: 'bufferMinutes', label: 'Thời gian đệm', type: 'number', align: 'right' },
+      { key: 'price', label: 'Giá bán', type: 'money', align: 'right' },
+      { key: 'status', label: 'Trạng thái', type: 'status' },
+    ],
+    filters: [
+      { label: 'Tất cả', field: '', value: '' },
+      { label: 'Đang hoạt động', field: 'status', value: 'Đang hoạt động' },
+      { label: 'Tạm ngưng', field: 'status', value: 'Tạm ngưng' },
+    ],
+    fields: [
+      { key: 'code', label: 'Mã liệu trình', placeholder: 'DV-TLTT', helper: 'Mã duy nhất, tự động chuyển thành chữ in hoa.' },
+      { key: 'name', label: 'Tên liệu trình', placeholder: 'Ví dụ: Thả lỏng toàn thân' },
+      { key: 'category', label: 'Nhóm liệu trình', type: 'select', options: ['Liệu trình MIÊN'] },
+      { key: 'durationMinutes', label: 'Thời lượng (phút)', type: 'number', placeholder: '60' },
+      { key: 'bufferMinutes', label: 'Thời gian đệm (phút)', type: 'number', placeholder: '15', helper: 'Khoảng nghỉ để chuẩn bị phòng trước lịch tiếp theo.' },
+      { key: 'price', label: 'Giá bán', type: 'number', placeholder: '0' },
+      { key: 'status', label: 'Trạng thái', type: 'select', options: ['Đang hoạt động', 'Tạm ngưng'] },
+      { key: 'description', label: 'Mô tả', type: 'textarea', required: false },
+    ],
+    defaults: { durationMinutes: 60, bufferMinutes: 15, price: 0, status: 'Đang hoạt động' },
+    rows: [],
   },
   bookings: {
     resource: 'bookings',
