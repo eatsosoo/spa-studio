@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AdminRow } from '~/types'
+import type { AdminRow, PaginatedResponse, PaginationMeta } from '~/types'
 import type { AdminResourceConfig } from '~/data/admin'
 
 const props = defineProps<{ config: AdminResourceConfig }>()
@@ -7,7 +7,10 @@ const route = useRoute()
 const router = useRouter()
 const isPosts = computed(() => props.config.resource === 'posts')
 const search = ref('')
+const debouncedSearch = ref('')
 const activeFilter = ref(0)
+const page = ref(1)
+const pageSize = ref(10)
 const drawerOpen = ref(false)
 const editingRow = ref<AdminRow | null>(null)
 const deletingRow = ref<AdminRow | null>(null)
@@ -16,10 +19,31 @@ const deleting = ref(false)
 const mutationError = ref('')
 const successMessage = ref(route.query.saved === 'updated' ? 'Đã cập nhật bài viết thành công.' : route.query.saved === 'created' ? 'Đã tạo bài viết thành công.' : '')
 type FormOptions = { services: string[]; employees: string[]; productCategories: string[]; postCategories: string[] }
+const emptyMeta: PaginationMeta = { page: 1, pageSize: 10, total: 0, totalPages: 1, from: 0, to: 0 }
+const activeFilterConfig = computed(() => props.config.filters[activeFilter.value])
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(search, (value) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    page.value = 1
+    debouncedSearch.value = value.trim()
+  }, 300)
+})
+onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer) })
 
 const { data: response, pending, error, refresh } = await useAsyncData(
   `admin-${props.config.resource}`,
-  () => $fetch<{ data: AdminRow[] }>(`/api/admin/${props.config.resource}`),
+  () => $fetch<PaginatedResponse<AdminRow>>(`/api/admin/${props.config.resource}`, {
+    query: {
+      page: page.value,
+      pageSize: pageSize.value,
+      search: debouncedSearch.value || undefined,
+      filterField: activeFilterConfig.value?.field || undefined,
+      filterValue: activeFilterConfig.value?.value || undefined,
+    },
+  }),
+  { watch: [page, pageSize, debouncedSearch, activeFilter] },
 )
 const { data: optionsResponse, refresh: refreshOptions } = await useAsyncData(
   `admin-form-options-${props.config.resource}`,
@@ -37,15 +61,21 @@ const formFields = computed(() => props.config.fields.map((field) => {
 }))
 
 const rows = computed(() => response.value?.data ?? [])
-const filteredRows = computed(() => {
-  const query = search.value.trim().toLocaleLowerCase('vi')
-  const filter = props.config.filters[activeFilter.value]
-  return rows.value.filter((row) => {
-    const matchesQuery = !query || Object.values(row).some((value) => String(value ?? '').toLocaleLowerCase('vi').includes(query))
-    const matchesFilter = !filter?.field || String(row[filter.field]) === filter.value
-    return matchesQuery && matchesFilter
-  })
+const pagination = computed(() => response.value?.meta ?? { ...emptyMeta, pageSize: pageSize.value })
+
+watch(() => response.value?.meta.page, (resolvedPage) => {
+  if (resolvedPage && resolvedPage !== page.value) page.value = resolvedPage
 })
+
+function selectFilter(index: number) {
+  page.value = 1
+  activeFilter.value = index
+}
+
+function selectPageSize(value: number) {
+  page.value = 1
+  pageSize.value = value
+}
 
 function errorMessage(value: unknown) {
   const failure = value as { data?: { statusMessage?: string; message?: string }; statusMessage?: string; message?: string }
@@ -79,7 +109,9 @@ async function saveRow(value: AdminRow) {
   mutationError.value = ''
   try {
     const id = editingRow.value?.id
-    response.value = await $fetch<{ data: AdminRow[] }>(id ? `/api/admin/${props.config.resource}/${id}` : `/api/admin/${props.config.resource}`, { method: id ? 'PATCH' : 'POST', body: value })
+    await $fetch(id ? `/api/admin/${props.config.resource}/${id}` : `/api/admin/${props.config.resource}`, { method: id ? 'PATCH' : 'POST', body: value })
+    if (!id) page.value = 1
+    await refresh()
     await refreshOptions()
     drawerOpen.value = false
     successMessage.value = `Đã ${id ? 'cập nhật' : 'tạo'} ${props.config.singularLabel} thành công.`
@@ -120,7 +152,7 @@ async function removeRow() {
 
     <div class="mt-7 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
       <div class="flex max-w-full gap-1 overflow-x-auto pb-1">
-        <button v-for="(filter, index) in config.filters" :key="filter.label" type="button" class="filter-tab" :class="activeFilter === index ? 'filter-tab--active' : ''" @click="activeFilter = index">{{ filter.label }}</button>
+        <button v-for="(filter, index) in config.filters" :key="filter.label" type="button" class="filter-tab" :class="activeFilter === index ? 'filter-tab--active' : ''" @click="selectFilter(index)">{{ filter.label }}</button>
       </div>
       <div class="flex gap-2">
         <label class="admin-search"><AppIcon name="search" :size="17" /><input v-model="search" type="search" :placeholder="config.searchPlaceholder"></label>
@@ -135,16 +167,15 @@ async function removeRow() {
           <button type="button" class="grid size-7 shrink-0 place-items-center rounded-full hover:bg-[#d5ded0]" aria-label="Đóng thông báo" @click="successMessage = ''"><AppIcon name="close" :size="14" /></button>
         </div>
       </Transition>
-      <AdminDataTable v-if="filteredRows.length || pending" :columns="config.columns" :rows="filteredRows" :loading="pending" @edit="openEdit" @remove="deletingRow = $event" />
+      <AdminDataTable v-if="rows.length || pending" :columns="config.columns" :rows="rows" :loading="pending" @edit="openEdit" @remove="deletingRow = $event" />
       <div v-else-if="error" class="rounded-sm border border-[#aa746c]/25 bg-[#f1e6e0] px-6 py-9 text-center">
         <p class="text-sm font-semibold text-[#65443e]">Không tải được dữ liệu</p>
         <p class="mx-auto mt-2 max-w-lg text-xs leading-5 text-[#80665f]">{{ errorMessage(error) }}</p>
         <AppButton label="Thử lại" variant="secondary" icon="refresh" class="mt-5" @click="() => refresh()" />
       </div>
       <AdminEmptyState v-else title="Chưa có dữ liệu" :description="`Thêm ${config.singularLabel} đầu tiên để bắt đầu quản lý.`" />
+      <AppPagination class="mt-5" :meta="pagination" @update:page="page = $event" @update:page-size="selectPageSize" />
     </div>
-
-    <div class="mt-5 flex items-center justify-between text-[0.68rem] text-[#7a8176]"><span>Hiển thị {{ filteredRows.length }} / {{ rows.length }} {{ config.singularLabel }}</span><span>Đồng bộ trực tiếp với MySQL</span></div>
 
     <AdminEntityDrawer v-if="!isPosts" :open="drawerOpen" :title="editingRow ? `Chỉnh sửa ${config.singularLabel}` : config.addLabel" :fields="formFields" :value="editingRow ?? config.defaults" :saving="saving" :api-error="mutationError" @close="drawerOpen = false" @save="saveRow" />
 

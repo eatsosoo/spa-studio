@@ -61,8 +61,8 @@ const form = reactive({
 
 const today = new Date().toISOString().slice(0, 10)
 const route = useRoute()
-const { data: postResponse } = await useAsyncData('home-posts', () => $fetch<{ data: HomePost[] }>('/api/posts'))
-const latestPosts = computed(() => (postResponse.value?.data ?? []).slice(0, 3))
+const { data: postResponse } = await useAsyncData('home-posts', () => $fetch<{ data: HomePost[] }>('/api/posts', { query: { page: 1, pageSize: 3 } }))
+const latestPosts = computed(() => postResponse.value?.data ?? [])
 
 function formatPostDate(value: string | null) {
   if (!value) return ''

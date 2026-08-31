@@ -19,6 +19,20 @@ export type Product = {
 
 export type AdminRow = Record<string, string | number>
 
+export type PaginationMeta = {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+  from: number
+  to: number
+}
+
+export type PaginatedResponse<T> = {
+  data: T[]
+  meta: PaginationMeta
+}
+
 export type AdminColumn = {
   key: string
   label: string

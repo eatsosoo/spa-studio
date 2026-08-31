@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import type { AdminColumn, AdminRow } from '~/types'
+import type { AdminColumn, AdminRow, PaginationMeta } from '~/types'
 
-const props = withDefaults(defineProps<{ columns: AdminColumn[]; rows: AdminRow[]; loading?: boolean; actions?: boolean }>(), { actions: true })
+const props = withDefaults(defineProps<{ columns: AdminColumn[]; rows: AdminRow[]; loading?: boolean; actions?: boolean; paginate?: boolean; defaultPageSize?: number; pageSizes?: number[] }>(), { actions: true, paginate: false, defaultPageSize: 10, pageSizes: () => [10, 20, 50] })
 defineEmits<{ edit: [row: AdminRow]; remove: [row: AdminRow] }>()
 const sortKey = ref('')
 const sortDirection = ref<'asc' | 'desc'>('asc')
+const page = ref(1)
+const pageSize = ref(props.defaultPageSize)
 
 const sortedRows = computed(() => {
   if (!sortKey.value) return props.rows
@@ -16,6 +18,15 @@ const sortedRows = computed(() => {
     .sort((left, right) => compareValues(left.row[column.key], right.row[column.key], column.type) * multiplier || left.index - right.index)
     .map(item => item.row)
 })
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedRows.value.length / pageSize.value)))
+const visibleRows = computed(() => props.paginate ? sortedRows.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value) : sortedRows.value)
+const pagination = computed<PaginationMeta>(() => {
+  const total = sortedRows.value.length
+  const from = total ? (page.value - 1) * pageSize.value + 1 : 0
+  return { page: page.value, pageSize: pageSize.value, total, totalPages: totalPages.value, from, to: Math.min(from + pageSize.value - 1, total) }
+})
+
+watch(() => props.rows, () => { page.value = Math.min(page.value, totalPages.value) }, { deep: true })
 
 function dateValue(value: string | number) {
   const text = String(value)
@@ -43,6 +54,12 @@ function toggleSort(key: string) {
     sortKey.value = key
     sortDirection.value = 'asc'
   }
+  page.value = 1
+}
+
+function selectPageSize(value: number) {
+  pageSize.value = value
+  page.value = 1
 }
 
 function formatCell(value: string | number | undefined, type?: AdminColumn['type']) {
@@ -58,8 +75,9 @@ function formatCell(value: string | number | undefined, type?: AdminColumn['type
 </script>
 
 <template>
-  <div class="overflow-x-auto">
-    <table class="w-full min-w-[760px] border-collapse text-left">
+  <div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[760px] border-collapse text-left">
       <thead>
         <tr class="border-b border-[#78816f]/20">
           <th v-for="column in columns" :key="column.key" :aria-sort="sortKey === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'" class="px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.15em] text-[#7b8277] first:pl-0" :class="column.align === 'right' ? 'text-right' : ''">
@@ -81,7 +99,7 @@ function formatCell(value: string | number | undefined, type?: AdminColumn['type
         </tr>
       </tbody>
       <tbody v-else>
-        <tr v-for="row in sortedRows" :key="String(row.id)" class="group border-b border-[#78816f]/15 transition-colors hover:bg-[#ebe7dd]/55">
+        <tr v-for="row in visibleRows" :key="String(row.id)" class="group border-b border-[#78816f]/15 transition-colors hover:bg-[#ebe7dd]/55">
           <td v-for="(column, columnIndex) in columns" :key="column.key" class="px-4 py-4 text-xs text-[#5c6358] first:pl-0" :class="[column.align === 'right' ? 'text-right font-medium tabular-nums text-[#384232]' : '', columnIndex === 0 ? 'font-semibold text-[#313a2e]' : '']">
             <StatusBadge v-if="column.type === 'status'" :label="String(row[column.key])" />
             <span v-else>{{ formatCell(row[column.key], column.type) }}</span>
@@ -96,6 +114,8 @@ function formatCell(value: string | number | undefined, type?: AdminColumn['type
           </td>
         </tr>
       </tbody>
-    </table>
+      </table>
+    </div>
+    <AppPagination v-if="paginate" class="mt-5" :meta="pagination" :page-sizes="pageSizes" @update:page="page = $event" @update:page-size="selectPageSize" />
   </div>
 </template>

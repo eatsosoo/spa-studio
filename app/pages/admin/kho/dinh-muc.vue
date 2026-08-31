@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { PaginationMeta } from '~/types'
+
 definePageMeta({ layout: "admin" });
 useHead({ title: "Định mức dịch vụ | MIÊN Admin" });
 
@@ -26,6 +28,8 @@ const services = computed(() => response.value?.data.services ?? []);
 const products = computed(() => response.value?.data.products ?? []);
 const selectedId = ref<number | null>(null);
 const search = ref("");
+const page = ref(1);
+const pageSize = ref(10);
 const items = ref<Usage[]>([]);
 const saving = ref(false);
 const message = ref("");
@@ -37,6 +41,20 @@ const filtered = computed(() =>
       .includes(search.value.toLowerCase()),
   ),
 );
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)));
+const pagedServices = computed(() => filtered.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value));
+const pagination = computed<PaginationMeta>(() => {
+  const total = filtered.value.length;
+  const from = total ? (page.value - 1) * pageSize.value + 1 : 0;
+  return { page: page.value, pageSize: pageSize.value, total, totalPages: totalPages.value, from, to: Math.min(from + pageSize.value - 1, total) };
+});
+watch(search, () => { page.value = 1; });
+watch(filtered, () => { page.value = Math.min(page.value, totalPages.value); });
+
+function selectPageSize(value: number) {
+  pageSize.value = value;
+  page.value = 1;
+}
 const selected = computed(
   () =>
     services.value.find((service) => service.id === selectedId.value) ?? null,
@@ -159,7 +177,7 @@ async function save() {
         </div>
         <div v-else class="mt-5 grid max-h-[620px] gap-1 overflow-y-auto">
           <button
-            v-for="service in filtered"
+            v-for="service in pagedServices"
             :key="service.id"
             type="button"
             class="grid grid-cols-[1fr_auto] items-center gap-4 rounded-sm px-4 py-3 text-left transition active:scale-[0.99]"
@@ -185,6 +203,12 @@ async function save() {
             v-if="!filtered.length"
             title="Không tìm thấy dịch vụ"
             description="Thử một từ khóa khác."
+          />
+          <AppPagination
+            class="mt-4"
+            :meta="pagination"
+            @update:page="page = $event"
+            @update:page-size="selectPageSize"
           />
         </div>
       </aside>

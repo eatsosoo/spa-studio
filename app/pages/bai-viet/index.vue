@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { PaginatedResponse, PaginationMeta } from '~/types'
+
 type PostSummary = {
   id: number
   slug: string
@@ -10,10 +12,33 @@ type PostSummary = {
   author: string
 }
 
-const { data: response, pending, error, refresh } = await useAsyncData('public-posts', () => $fetch<{ data: PostSummary[] }>('/api/posts'))
+const page = ref(1)
+const pageSize = ref(7)
+const listing = ref<HTMLElement | null>(null)
+const emptyMeta: PaginationMeta = { page: 1, pageSize: 7, total: 0, totalPages: 1, from: 0, to: 0 }
+const { data: response, pending, error, refresh } = await useAsyncData(
+  'public-posts',
+  () => $fetch<PaginatedResponse<PostSummary>>('/api/posts', { query: { page: page.value, pageSize: pageSize.value } }),
+  { watch: [page, pageSize] },
+)
 const posts = computed(() => response.value?.data ?? [])
+const pagination = computed(() => response.value?.meta ?? { ...emptyMeta, pageSize: pageSize.value })
 const leadPost = computed(() => posts.value[0])
 const remainingPosts = computed(() => posts.value.slice(1))
+
+watch(() => response.value?.meta.page, resolvedPage => {
+  if (resolvedPage && resolvedPage !== page.value) page.value = resolvedPage
+})
+
+function selectPage(value: number) {
+  page.value = value
+  nextTick(() => listing.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+
+function selectPageSize(value: number) {
+  page.value = 1
+  pageSize.value = value
+}
 
 function formatDate(value: string | null) {
   if (!value) return ''
@@ -40,7 +65,7 @@ useSeoMeta({
         </div>
       </section>
 
-      <section class="px-5 pb-24 md:px-10 md:pb-32 lg:px-14">
+      <section ref="listing" class="scroll-mt-6 px-5 pb-24 md:px-10 md:pb-32 lg:px-14">
         <div v-if="pending" class="mx-auto grid max-w-[1400px] animate-pulse gap-10 lg:grid-cols-[1.15fr_0.85fr]"><div class="aspect-[16/11] bg-[#e3ded2]" /><div class="space-y-5 py-8"><div class="h-3 w-28 bg-[#ddd8cc]" /><div class="h-28 bg-[#ddd8cc]" /><div class="h-16 bg-[#ddd8cc]" /></div></div>
 
         <div v-else-if="error" class="mx-auto max-w-lg py-20 text-center"><p class="font-display text-3xl font-light">Chưa thể mở trang bài viết.</p><p class="mt-3 text-sm leading-6 text-[#6b7167]">Kết nối đang gián đoạn. Bạn có thể thử tải lại sau ít phút.</p><button type="button" class="button-primary mt-7" @click="() => refresh()">Thử lại</button></div>
@@ -64,6 +89,7 @@ useSeoMeta({
               <div><p class="text-[0.63rem] font-semibold uppercase tracking-[0.15em] text-[#737b6e]">{{ post.category }} · {{ formatDate(post.publishedAt) }}</p><h2 class="mt-3 font-display text-3xl font-light leading-[1.08] tracking-[-0.035em]">{{ post.title }}</h2><p class="mt-3 line-clamp-2 text-xs leading-6 text-[#6d7369]">{{ post.excerpt }}</p></div>
             </NuxtLink>
           </div>
+          <AppPagination class="mt-12" :meta="pagination" :page-sizes="[7, 14, 28]" @update:page="selectPage" @update:page-size="selectPageSize" />
         </div>
       </section>
     </main>

@@ -157,11 +157,11 @@ async function cancelDocument(id: string | number | undefined) {
     <div v-if="error" class="mt-5 border border-[#aa746c]/25 bg-[#f1e6e0] px-6 py-8 text-center text-xs text-[#65443e]">{{ errorMessage(error) }}</div>
 
     <div v-else class="mt-5">
-      <AdminDataTable v-if="activeView === 'stocks'" :columns="stockColumns" :rows="stockRows" :loading="pending" :actions="false" />
-      <AdminDataTable v-else-if="activeView === 'lots'" :columns="lotColumns" :rows="lotRows" :loading="pending" :actions="false" />
-      <AdminDataTable v-else-if="activeView === 'transactions'" :columns="transactionColumns" :rows="transactionRows" :loading="pending" :actions="false" />
+      <AdminDataTable v-if="activeView === 'stocks'" :columns="stockColumns" :rows="stockRows" :loading="pending" :actions="false" paginate />
+      <AdminDataTable v-else-if="activeView === 'lots'" :columns="lotColumns" :rows="lotRows" :loading="pending" :actions="false" paginate />
+      <AdminDataTable v-else-if="activeView === 'transactions'" :columns="transactionColumns" :rows="transactionRows" :loading="pending" :actions="false" paginate />
       <div v-else>
-        <AdminDataTable :columns="documentColumns" :rows="documentRows" :loading="pending">
+        <AdminDataTable :columns="documentColumns" :rows="documentRows" :loading="pending" paginate>
           <template #actions="{ row }">
             <div v-if="workspace.documents.find(item => item.id === Number(row.id))?.status === 'draft'" class="flex justify-end gap-1">
               <button type="button" class="grid size-8 place-items-center rounded-full text-[#866158] transition hover:bg-[#ead8d3]" :disabled="postingId !== null || cancellingId !== null" :aria-label="`Hủy chứng từ ${row.reference}`" @click="cancelDocument(row.id)"><AppIcon name="close" :size="15" /></button>
