@@ -9,12 +9,50 @@ export type Product = {
   size: string
   stock: number
   sku: string
-  status: 'Đang bán' | 'Sắp hết' | 'Tạm ẩn'
+  status: 'Đang bán' | 'Sắp hết' | 'Tạm hết hàng'
   image: string
   imagePosition: string
   benefits: string[]
   ingredients: string
   usage: string
+}
+
+export type CartLine = {
+  productId: number
+  quantity: number
+}
+
+export type CartProduct = Product & {
+  requestedQuantity: number
+  purchasableQuantity: number
+  available: boolean
+  message: string | null
+}
+
+export type StoreOrder = {
+  reference: string
+  status: string
+  statusLabel: string
+  paymentStatus: string
+  paymentStatusLabel: string
+  fulfillmentStatus: string
+  fulfillmentStatusLabel: string
+  customerName: string
+  customerPhone: string
+  shippingAddress: string
+  subtotal: number
+  shippingFee: number
+  totalAmount: number
+  createdAt: string
+  items: Array<{
+    id: number
+    productId: number | null
+    sku: string
+    productName: string
+    quantity: number
+    unitPrice: number
+    totalAmount: number
+  }>
 }
 
 export type AdminRow = Record<string, string | number>

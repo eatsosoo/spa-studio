@@ -2,6 +2,7 @@
 withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 const isMenuOpen = ref(false)
+const { count } = useCart()
 </script>
 
 <template>
@@ -26,6 +27,10 @@ const isMenuOpen = ref(false)
         <slot name="action">
           <NuxtLink to="/?dat-lich=1" class="button-quiet hidden sm:inline-flex">Đặt một khoảng nghỉ</NuxtLink>
         </slot>
+        <NuxtLink to="/gio-hang" class="relative grid size-10 place-items-center rounded-full border border-[#596650]/35 text-[#3f493a] transition hover:bg-[#e5e0d5] active:scale-[0.98]" aria-label="Mở giỏ hàng">
+          <AppIcon name="cart" :size="18" />
+          <span v-if="count" class="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#4c5d43] px-1 text-[0.6rem] font-semibold text-[#f7f2e8]">{{ count > 99 ? '99+' : count }}</span>
+        </NuxtLink>
         <button type="button" class="grid size-10 place-items-center rounded-full border border-[#596650]/35 lg:hidden" aria-label="Mở menu" @click="isMenuOpen = !isMenuOpen">
           <AppIcon :name="isMenuOpen ? 'close' : 'menu'" />
         </button>
@@ -36,6 +41,7 @@ const isMenuOpen = ref(false)
       <nav v-if="isMenuOpen" class="absolute inset-x-5 top-[82px] grid gap-1 rounded-md border border-[#78816f]/20 bg-[#f3efe5]/95 p-3 shadow-[0_18px_45px_rgba(47,57,42,0.12)] backdrop-blur-xl lg:hidden" aria-label="Điều hướng mobile">
         <NuxtLink to="/#lieu-trinh" class="mobile-nav-link" @click="isMenuOpen = false">Liệu trình</NuxtLink>
         <NuxtLink to="/san-pham" class="mobile-nav-link" @click="isMenuOpen = false">Sản phẩm</NuxtLink>
+        <NuxtLink to="/gio-hang" class="mobile-nav-link" @click="isMenuOpen = false">Giỏ hàng ({{ count }})</NuxtLink>
         <NuxtLink to="/bai-viet" class="mobile-nav-link" @click="isMenuOpen = false">Bài viết</NuxtLink>
         <NuxtLink to="/#khong-gian" class="mobile-nav-link" @click="isMenuOpen = false">Không gian</NuxtLink>
         <NuxtLink to="/admin" class="mobile-nav-link" @click="isMenuOpen = false">Quản trị</NuxtLink>

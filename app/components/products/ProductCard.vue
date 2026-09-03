@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Product } from '~/types'
-import { formatPrice } from '~/data/products'
+import { formatPrice } from '~/utils/currency'
 
 defineProps<{ product: Product; index?: number }>()
 </script>
@@ -10,7 +10,8 @@ defineProps<{ product: Product; index?: number }>()
     <div class="relative aspect-[4/5] overflow-hidden rounded-[0.35rem] bg-[#e5dfd2]">
       <img :src="product.image" :alt="product.name" class="h-full w-full scale-[1.48] object-cover transition duration-700 ease-out group-hover:scale-[1.54]" :style="{ objectPosition: product.imagePosition }">
       <span class="absolute left-5 top-5 rounded-full border border-[#f5f0e5]/45 bg-[#f5f0e5]/75 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#465140] backdrop-blur-md">{{ product.category }}</span>
-      <span class="absolute bottom-5 right-5 grid size-11 place-items-center rounded-full bg-[#46573f] text-[#f5f0e6] transition duration-500 group-hover:rotate-[-45deg] group-hover:bg-[#33412f]"><AppIcon name="arrow" :size="17" /></span>
+      <span v-if="product.stock === 0" class="absolute inset-x-5 bottom-5 rounded-sm bg-[#30392d]/88 px-3 py-2 text-center text-[0.65rem] font-semibold text-[#f5f0e6] backdrop-blur-md">Tạm hết hàng</span>
+      <span v-else class="absolute bottom-5 right-5 grid size-11 place-items-center rounded-full bg-[#46573f] text-[#f5f0e6] transition duration-500 group-hover:rotate-[-45deg] group-hover:bg-[#33412f]"><AppIcon name="arrow" :size="17" /></span>
     </div>
     <div class="grid grid-cols-[1fr_auto] gap-4 pt-5">
       <div>

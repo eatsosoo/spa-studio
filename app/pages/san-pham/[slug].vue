@@ -1,29 +1,35 @@
 <script setup lang="ts">
-import { formatPrice, getProductBySlug, products } from '~/data/products'
+import type { Product } from '~/types'
+import { formatPrice } from '~/utils/currency'
 
 const route = useRoute()
-const product = getProductBySlug(String(route.params.slug))
+const { data: productResponse, error } = await useAsyncData(`store-product-${route.params.slug}`, () => $fetch<{ data: Product }>(`/api/products/${route.params.slug}`))
+const product = computed(() => productResponse.value?.data)
 
-if (!product) {
-  throw createError({ statusCode: 404, statusMessage: 'Không tìm thấy sản phẩm.' })
-}
+if (error.value || !product.value) throw createError({ statusCode: 404, statusMessage: 'Không tìm thấy sản phẩm.' })
 
-const relatedProducts = products.filter((item) => item.id !== product.id).slice(0, 2)
+const { data: productsResponse } = await useAsyncData('store-products', () => $fetch<{ data: Product[] }>('/api/products'))
+const relatedProducts = computed(() => (productsResponse.value?.data ?? []).filter(item => item.id !== product.value?.id).slice(0, 4))
 
-useHead({ title: `${product.name} | MIÊN Spa` })
-useSeoMeta({ description: product.shortDescription })
+useHead({ title: () => `${product.value?.name ?? 'Sản phẩm'} | MIÊN Spa` })
+useSeoMeta({ description: () => product.value?.shortDescription ?? '' })
 
 const quantity = ref(1)
 const added = ref(false)
+const { add } = useCart()
+let addedTimer: number | undefined
 
 function addToBag() {
+  if (!product.value || !add(product.value, quantity.value)) return
   added.value = true
-  window.setTimeout(() => { added.value = false }, 2200)
+  if (addedTimer) clearTimeout(addedTimer)
+  addedTimer = window.setTimeout(() => { added.value = false }, 2200)
 }
+onBeforeUnmount(() => { if (addedTimer) clearTimeout(addedTimer) })
 </script>
 
 <template>
-  <div class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
+  <div v-if="product" class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
     <SiteHeader compact />
     <main class="px-5 pb-28 pt-10 md:px-10 md:pt-16 lg:px-14">
       <div class="mx-auto max-w-[1400px]">
@@ -47,7 +53,7 @@ function addToBag() {
               <div class="flex h-12 items-center rounded-full border border-[#687461]/30 px-2">
                 <button type="button" class="grid size-8 place-items-center rounded-full transition hover:bg-[#e2ded3]" aria-label="Giảm số lượng" @click="quantity = Math.max(1, quantity - 1)">−</button>
                 <span class="w-8 text-center text-xs font-semibold tabular-nums">{{ quantity }}</span>
-                <button type="button" class="grid size-8 place-items-center rounded-full transition hover:bg-[#e2ded3]" aria-label="Tăng số lượng" @click="quantity += 1">+</button>
+                <button type="button" class="grid size-8 place-items-center rounded-full transition hover:bg-[#e2ded3] disabled:cursor-not-allowed disabled:opacity-35" aria-label="Tăng số lượng" :disabled="quantity >= product.stock" @click="quantity = Math.min(product.stock, quantity + 1)">+</button>
               </div>
               <button type="button" class="button-primary min-h-12 flex-1 justify-center" :disabled="product.stock === 0" @click="addToBag">
                 <template v-if="product.stock === 0">Tạm hết hàng</template>
@@ -55,6 +61,7 @@ function addToBag() {
                 <template v-else>Thêm vào giỏ <AppIcon name="arrow" :size="16" /></template>
               </button>
             </div>
+            <p v-if="product.stock > 0 && product.stock <= 10" class="mt-3 text-[0.68rem] font-medium text-[#8a5e4e]">Chỉ còn {{ product.stock }} sản phẩm khả dụng.</p>
             <p class="mt-4 text-[0.68rem] text-[#777e73]">Miễn phí giao hàng tại TP. Hồ Chí Minh cho đơn từ 1.200.000đ.</p>
 
             <div class="mt-11 divide-y divide-[#78816f]/22 border-y border-[#78816f]/22">
@@ -84,7 +91,7 @@ function addToBag() {
             </div>
             <NuxtLink to="/san-pham" class="text-link hidden sm:block">Xem tất cả</NuxtLink>
           </div>
-          <div class="grid gap-8 md:grid-cols-2"><ProductCard v-for="item in relatedProducts" :key="item.id" :product="item" /></div>
+          <div class="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"><ProductCard v-for="item in relatedProducts" :key="item.id" :product="item" /></div>
         </section>
       </div>
     </main>

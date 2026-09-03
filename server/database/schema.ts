@@ -238,12 +238,17 @@ export const products = mysqlTable('products', {
   slug: varchar('slug', { length: 200 }).notNull(),
   shortDescription: varchar('short_description', { length: 500 }),
   description: text('description'),
+  size: varchar('size', { length: 60 }),
+  benefits: json('benefits'),
+  ingredients: text('ingredients'),
+  usage: text('usage'),
   unit: varchar('unit', { length: 30 }).default('sản phẩm').notNull(),
   costPrice: money('cost_price').default('0').notNull(),
   salePrice: money('sale_price').notNull(),
   trackInventory: boolean('track_inventory').default(true).notNull(),
   status: mysqlEnum('status', ['draft', 'active', 'inactive', 'out_of_stock']).default('draft').notNull(),
   imageUrl: varchar('image_url', { length: 500 }),
+  imagePosition: varchar('image_position', { length: 60 }).default('center').notNull(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
   deletedAt: timestamp('deleted_at', { mode: 'date' }),
@@ -376,6 +381,11 @@ export const inventoryReservations = mysqlTable('inventory_reservations', {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (table) => [
+  foreignKey({
+    name: 'inventory_reservations_order_item_fk',
+    columns: [table.orderItemId],
+    foreignColumns: [salesOrderItems.id],
+  }).onDelete('cascade'),
   index('inventory_reservations_order_idx').on(table.orderItemId, table.status),
   uniqueIndex('inventory_reservations_order_lot_unique').on(table.orderItemId, table.lotId),
 ])
@@ -557,6 +567,21 @@ export const salesOrders = mysqlTable('sales_orders', {
   branchId: bigint('branch_id', { mode: 'number', unsigned: true }).notNull().references(() => branches.id),
   inventoryLocationId: bigint('inventory_location_id', { mode: 'number', unsigned: true }).references(() => inventoryLocations.id),
   customerId: bigint('customer_id', { mode: 'number', unsigned: true }).references(() => customers.id, { onDelete: 'set null' }),
+  source: mysqlEnum('source', ['website', 'admin', 'walk_in']).default('website').notNull(),
+  accessTokenHash: varchar('access_token_hash', { length: 64 }),
+  idempotencyKey: varchar('idempotency_key', { length: 80 }),
+  customerName: varchar('customer_name', { length: 150 }),
+  customerPhone: varchar('customer_phone', { length: 30 }),
+  customerEmail: varchar('customer_email', { length: 190 }),
+  customerNote: varchar('customer_note', { length: 500 }),
+  shippingAddressLine: varchar('shipping_address_line', { length: 255 }),
+  shippingWard: varchar('shipping_ward', { length: 100 }),
+  shippingDistrict: varchar('shipping_district', { length: 100 }),
+  shippingProvince: varchar('shipping_province', { length: 100 }),
+  shippingFee: money('shipping_fee').default('0').notNull(),
+  paymentMethod: mysqlEnum('payment_method', ['cod', 'bank_transfer']).default('cod').notNull(),
+  paymentStatus: mysqlEnum('payment_status', ['unpaid', 'pending', 'paid', 'failed', 'partially_refunded', 'refunded']).default('unpaid').notNull(),
+  fulfillmentStatus: mysqlEnum('fulfillment_status', ['unfulfilled', 'packing', 'shipped', 'delivered', 'returned']).default('unfulfilled').notNull(),
   status: mysqlEnum('status', ['draft', 'confirmed', 'paid', 'cancelled', 'refunded']).default('draft').notNull(),
   subtotal: money('subtotal').default('0').notNull(),
   discountAmount: money('discount_amount').default('0').notNull(),
@@ -565,12 +590,21 @@ export const salesOrders = mysqlTable('sales_orders', {
   promotionId: bigint('promotion_id', { mode: 'number', unsigned: true }).references(() => promotions.id, { onDelete: 'set null' }),
   couponId: bigint('coupon_id', { mode: 'number', unsigned: true }).references(() => coupons.id, { onDelete: 'set null' }),
   soldBy: bigint('sold_by', { mode: 'number', unsigned: true }).references(() => employees.id, { onDelete: 'set null' }),
+  reservationExpiresAt: timestamp('reservation_expires_at', { mode: 'date' }),
+  confirmedAt: timestamp('confirmed_at', { mode: 'date' }),
   paidAt: timestamp('paid_at', { mode: 'date' }),
+  cancelledAt: timestamp('cancelled_at', { mode: 'date' }),
+  completedAt: timestamp('completed_at', { mode: 'date' }),
+  cancellationReason: varchar('cancellation_reason', { length: 500 }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (table) => [
   uniqueIndex('sales_orders_reference_unique').on(table.reference),
+  uniqueIndex('sales_orders_access_token_unique').on(table.accessTokenHash),
+  uniqueIndex('sales_orders_idempotency_unique').on(table.idempotencyKey),
   index('sales_orders_branch_created_idx').on(table.branchId, table.createdAt),
+  index('sales_orders_status_created_idx').on(table.status, table.createdAt),
+  index('sales_orders_customer_phone_idx').on(table.customerPhone, table.createdAt),
 ])
 
 export const salesOrderItems = mysqlTable('sales_order_items', {
@@ -587,6 +621,15 @@ export const salesOrderItems = mysqlTable('sales_order_items', {
   costAmount: money('cost_amount').default('0').notNull(),
   commissionAmount: money('commission_amount').default('0').notNull(),
 }, (table) => [index('sales_order_items_order_idx').on(table.orderId)])
+
+export const salesOrderStatusHistory = mysqlTable('sales_order_status_history', {
+  id: id(),
+  orderId: bigint('order_id', { mode: 'number', unsigned: true }).notNull().references(() => salesOrders.id, { onDelete: 'cascade' }),
+  status: varchar('status', { length: 40 }).notNull(),
+  note: varchar('note', { length: 500 }),
+  changedBy: bigint('changed_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+}, (table) => [index('sales_order_status_history_order_idx').on(table.orderId, table.createdAt)])
 
 export const couponRedemptions = mysqlTable('coupon_redemptions', {
   id: id(),

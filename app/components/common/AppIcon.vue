@@ -7,6 +7,7 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-if="name === 'dashboard'"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></template>
     <template v-else-if="name === 'users'"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></template>
     <template v-else-if="name === 'products'"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M3 12l9 5 9-5M3 16l9 5 9-5"/></template>
+    <template v-else-if="name === 'cart'"><path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></template>
     <template v-else-if="name === 'services'"><path d="M12 21c4.8 0 8-2.8 8-7.2-3.6 0-6.1 1.3-8 4.2-1.9-2.9-4.4-4.2-8-4.2C4 18.2 7.2 21 12 21Z"/><path d="M12 18c-2.7-2.3-3.6-5.8-1.8-9.5L12 5l1.8 3.5c1.8 3.7.9 7.2-1.8 9.5ZM9.7 10.2C8 8.8 6 8.3 3.5 8.6c.2 3 1.6 5 4.4 6.4M14.3 10.2c1.7-1.4 3.7-1.9 6.2-1.6-.2 3-1.6 5-4.4 6.4"/></template>
     <template v-else-if="name === 'warehouse'"><path d="m3 9 9-6 9 6v11H3Z"/><path d="M7 20v-7h10v7M3 9h18M9 16h6"/></template>
     <template v-else-if="name === 'calendar'"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></template>

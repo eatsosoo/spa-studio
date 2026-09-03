@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { products } from '~/data/products'
+import type { Product } from '~/types'
 
 useHead({ title: 'Sản phẩm chăm sóc | MIÊN Spa' })
 useSeoMeta({ description: 'Các sản phẩm chăm sóc da và cơ thể được MIÊN chọn để tiếp tục nghi thức nghỉ ngơi tại nhà.' })
 
-const categories = ['Tất cả', ...new Set(products.map((product) => product.category))]
+const { data: response, pending, error, refresh } = await useAsyncData('store-products', () => $fetch<{ data: Product[] }>('/api/products'))
+const products = computed(() => response.value?.data ?? [])
+const categories = computed(() => ['Tất cả', ...new Set(products.value.map(product => product.category))])
 const activeCategory = ref('Tất cả')
-const visibleProducts = computed(() => activeCategory.value === 'Tất cả' ? products : products.filter((product) => product.category === activeCategory.value))
+const visibleProducts = computed(() => activeCategory.value === 'Tất cả' ? products.value : products.value.filter(product => product.category === activeCategory.value))
 </script>
 
 <template>
@@ -31,9 +33,14 @@ const visibleProducts = computed(() => activeCategory.value === 'Tất cả' ? p
             <button v-for="category in categories" :key="category" type="button" class="store-filter" :class="activeCategory === category ? 'store-filter--active' : ''" @click="activeCategory = category">{{ category }}</button>
           </div>
 
-          <TransitionGroup name="product-list" tag="div" class="grid gap-x-7 gap-y-16 md:grid-cols-2">
+          <div v-if="pending" class="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label="Đang tải sản phẩm">
+            <div v-for="index in 4" :key="index"><div class="aspect-[4/5] animate-pulse rounded-[0.35rem] bg-[#e2ddd1]" /><div class="mt-5 h-5 w-2/3 animate-pulse rounded-full bg-[#ddd8cc]" /></div>
+          </div>
+          <div v-else-if="error" class="border-y border-[#94685f]/25 py-12 text-center"><p class="text-sm font-semibold text-[#754b43]">Không thể tải danh sách sản phẩm.</p><button type="button" class="text-link mt-4" @click="() => refresh()">Thử lại</button></div>
+          <TransitionGroup v-else-if="visibleProducts.length" name="product-list" tag="div" class="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <ProductCard v-for="(product, index) in visibleProducts" :key="product.id" :product="product" :index="index" />
           </TransitionGroup>
+          <p v-else class="border-y border-[#78816f]/20 py-12 text-center text-sm text-[#6c7368]">Chưa có sản phẩm trong nhóm này.</p>
         </div>
       </section>
 
