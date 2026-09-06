@@ -6,12 +6,23 @@ const route = useRoute()
 const { user } = useAdminAuth()
 const inventoryOpen = ref(route.path.startsWith('/admin/kho'))
 const documentationOpen = ref(route.path.startsWith('/admin/tai-lieu'))
+const flowsOpen = ref(route.path.startsWith('/admin/luong-chuc-nang'))
+
+const { data: flowNavigationData } = await useAsyncData(
+  'feature-flow-navigation',
+  () => queryCollection('flows').select('id', 'stem', 'title', 'order').order('order', 'ASC').all(),
+)
+const flowNavigation = computed(() => (flowNavigationData.value ?? []).map(flow => ({
+  label: flow.title,
+  to: `/admin/luong-chuc-nang/${flow.stem.split('/').at(-1)}`,
+})))
 
 watch(
-  () => route.path,
+  () => route.fullPath,
   path => {
     if (path.startsWith('/admin/kho')) inventoryOpen.value = true
     if (path.startsWith('/admin/tai-lieu')) documentationOpen.value = true
+    if (path.startsWith('/admin/luong-chuc-nang')) flowsOpen.value = true
   },
 )
 
@@ -39,7 +50,6 @@ const documentationItems = [
   { label: 'Tổng quan', to: '/admin/tai-lieu' },
   { label: 'Database', to: '/admin/tai-lieu?view=database' },
   { label: 'API', to: '/admin/tai-lieu?view=api' },
-  { label: 'Luồng chức năng', to: '/admin/tai-lieu?view=flows' },
 ]
 
 function isActive(to: string) {
@@ -138,6 +148,24 @@ function isDocumentationActive(to: string) {
           </button>
           <div v-show="documentationOpen" id="documentation-submenu" class="ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3">
             <NuxtLink v-for="child in documentationItems" :key="child.to" :to="child.to" class="rounded-sm px-3 py-2 text-[0.69rem] text-[#aeb8aa] transition hover:bg-white/[0.06] hover:text-white" :class="isDocumentationActive(child.to) ? 'bg-white/[0.08] text-[#f4f0e8]' : ''" @click="$emit('close')">{{ child.label }}</NuxtLink>
+          </div>
+        </div>
+        <div class="mt-1">
+          <button
+            type="button"
+            class="admin-nav-item w-full text-left"
+            :class="route.path.startsWith('/admin/luong-chuc-nang') ? 'admin-nav-item--active' : ''"
+            :aria-expanded="flowsOpen"
+            aria-controls="feature-flow-submenu"
+            @click="flowsOpen = !flowsOpen"
+          >
+            <AppIcon name="flow" :size="18" />
+            <span>Luồng chức năng</span>
+            <AppIcon name="chevron-down" :size="13" class="ml-auto opacity-60 transition-transform" :class="flowsOpen ? 'rotate-180' : ''" />
+          </button>
+          <div v-show="flowsOpen" id="feature-flow-submenu" class="ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3">
+            <NuxtLink to="/admin/luong-chuc-nang" class="rounded-sm px-3 py-2 text-[0.69rem] text-[#aeb8aa] transition hover:bg-white/[0.06] hover:text-white" :class="route.path === '/admin/luong-chuc-nang' ? 'bg-white/[0.08] text-[#f4f0e8]' : ''" @click="$emit('close')">Tất cả luồng</NuxtLink>
+            <NuxtLink v-for="flow in flowNavigation" :key="flow.to" :to="flow.to" class="rounded-sm px-3 py-2 text-[0.69rem] leading-4 text-[#aeb8aa] transition hover:bg-white/[0.06] hover:text-white" :class="route.path === flow.to ? 'bg-white/[0.08] text-[#f4f0e8]' : ''" @click="$emit('close')">{{ flow.label }}</NuxtLink>
           </div>
         </div>
       </nav>

@@ -2,12 +2,12 @@
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Tài liệu hệ thống | MIÊN Admin' })
 
-type DocView = 'overview' | 'database' | 'api' | 'flows'
+type DocView = 'overview' | 'database' | 'api'
 type SearchItem = { type: string; title: string; detail: string; view: Exclude<DocView, 'overview'>; anchor: string; keywords: string }
 
 const route = useRoute()
 const searchQuery = ref('')
-const validViews: DocView[] = ['overview', 'database', 'api', 'flows']
+const validViews: DocView[] = ['overview', 'database', 'api']
 const currentView = computed<DocView>(() => {
   const requested = String(route.query.view ?? 'overview') as DocView
   return validViews.includes(requested) ? requested : 'overview'
@@ -17,7 +17,6 @@ const tabs: Array<{ label: string; value: DocView; icon: string }> = [
   { label: 'Tổng quan', value: 'overview', icon: 'book' },
   { label: 'Database', value: 'database', icon: 'database' },
   { label: 'API', value: 'api', icon: 'api' },
-  { label: 'Luồng chức năng', value: 'flows', icon: 'flow' },
 ]
 
 const databaseGroups = [
@@ -97,52 +96,6 @@ const apiGroups = [
   },
 ]
 
-const flows = [
-  {
-    id: 'flow-booking', title: 'Khách đặt lịch từ website', description: 'Yêu cầu được kiểm tra ở API, chuyển thành lịch chờ xác nhận và xuất hiện trong lịch quản trị.',
-    steps: [
-      { title: 'Gửi biểu mẫu', detail: 'Khách nhập tên, số điện thoại, dịch vụ và ngày mong muốn.', type: 'client' as const },
-      { title: 'POST /api/booking', detail: 'Server đọc payload, chuẩn hóa số điện thoại và kiểm tra dữ liệu.', type: 'api' as const },
-      { title: 'Booking resource', detail: 'Tìm hoặc tạo khách hàng và chuẩn bị mã tham chiếu.', type: 'service' as const },
-      { title: 'Transaction', detail: 'Ghi appointments và appointment_services nhất quán.', type: 'database' as const },
-      { title: 'Chờ xác nhận', detail: 'Lịch mới xuất hiện trong màn hình Đặt lịch của admin.', type: 'result' as const },
-    ],
-  },
-  {
-    id: 'flow-order', title: 'Đặt hàng và giữ tồn FEFO', description: 'Đơn website dùng idempotency key để tránh tạo trùng và giữ chính xác từng lô trong 24 giờ.',
-    steps: [
-      { title: 'Kiểm tra giỏ', detail: 'Giá và tồn khả dụng được xác minh lại trước thanh toán.', type: 'client' as const },
-      { title: 'POST /api/orders', detail: 'Xác thực khách nhận hàng, phương thức thanh toán và access token.', type: 'api' as const },
-      { title: 'Khóa sản phẩm', detail: 'Transaction khóa các dòng sản phẩm để tránh bán vượt tồn.', type: 'service' as const },
-      { title: 'Giữ lô FEFO', detail: 'inventory_reservations phân bổ từ lô sắp hết hạn trước.', type: 'database' as const },
-      { title: 'Tạo lịch sử', detail: 'Đơn, dòng hàng và trạng thái confirmed được ghi cùng transaction.', type: 'database' as const },
-      { title: 'Trả mã đơn', detail: 'Khách nhận reference và token để tra cứu an toàn.', type: 'result' as const },
-    ],
-  },
-  {
-    id: 'flow-inventory', title: 'Ghi sổ chứng từ kho', description: 'Bản nháp không ảnh hưởng tồn. Chỉ thao tác ghi sổ mới cập nhật lô, số dư tổng hợp và ledger.',
-    steps: [
-      { title: 'Lập chứng từ', detail: 'Nhập loại phiếu, kho nguồn/đích, lô, số lượng và giá vốn.', type: 'client' as const },
-      { title: 'Lưu draft', detail: 'Chứng từ và các dòng được lưu để kiểm tra trước.', type: 'api' as const },
-      { title: 'Yêu cầu ghi sổ', detail: 'POST …/documents/:id/post tải lại chứng từ trong transaction.', type: 'api' as const },
-      { title: 'Khóa số dư', detail: 'inventory_stocks được khóa; hệ thống từ chối nếu tồn không đủ.', type: 'service' as const },
-      { title: 'Cập nhật lô & ledger', detail: 'Ghi inventory_lots, inventory_stocks và inventory_transactions.', type: 'database' as const },
-      { title: 'Chứng từ bất biến', detail: 'Trạng thái posted; báo cáo kho đọc dữ liệu mới ngay sau đó.', type: 'result' as const },
-    ],
-  },
-  {
-    id: 'flow-auth', title: 'Đăng nhập khu vực quản trị', description: 'Mật khẩu và session token không được lưu ở dạng rõ; middleware kiểm tra phiên trên mọi route admin.',
-    steps: [
-      { title: 'Nhập thông tin', detail: 'Quản trị viên gửi username/email và mật khẩu.', type: 'client' as const },
-      { title: 'POST /api/auth/login', detail: 'API tìm tài khoản đang hoạt động và kiểm tra mật khẩu scrypt.', type: 'api' as const },
-      { title: 'Tạo session', detail: 'Sinh token ngẫu nhiên, chỉ lưu SHA-256 hash trong auth_sessions.', type: 'service' as const },
-      { title: 'Cookie HttpOnly', detail: 'Trình duyệt nhận cookie SameSite=Lax, Secure ở production.', type: 'result' as const },
-      { title: 'Middleware kiểm tra', detail: 'Mỗi request admin xác minh hạn dùng, thu hồi và vai trò.', type: 'service' as const },
-      { title: 'Thu hồi khi logout', detail: 'revoked_at được ghi và cookie bị xóa khỏi trình duyệt.', type: 'database' as const },
-    ],
-  },
-]
-
 const tableCount = computed(() => databaseGroups.reduce((total, group) => total + group.tables.length, 0))
 const endpointCount = computed(() => apiGroups.reduce((total, group) => total + group.endpoints.length, 0))
 
@@ -150,7 +103,6 @@ const fold = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/
 const searchIndex = computed<SearchItem[]>(() => [
   ...databaseGroups.map(group => ({ type: 'Database', title: group.name, detail: `${group.description} ${group.tables.join(', ')}`, view: 'database' as const, anchor: group.id, keywords: group.tables.join(' ') })),
   ...apiGroups.flatMap(group => group.endpoints.map(endpoint => ({ type: 'API', title: `${endpoint[0]} ${endpoint[1]}`, detail: `${group.name} · ${endpoint[2]}`, view: 'api' as const, anchor: group.id, keywords: `${group.name} ${endpoint.join(' ')}` }))),
-  ...flows.map(flow => ({ type: 'Luồng', title: flow.title, detail: flow.description, view: 'flows' as const, anchor: flow.id, keywords: flow.steps.map(step => `${step.title} ${step.detail}`).join(' ') })),
 ])
 const searchResults = computed(() => {
   const query = fold(searchQuery.value.trim())
@@ -202,21 +154,20 @@ function tabTo(value: DocView) {
     </section>
 
     <template v-else-if="currentView === 'overview'">
-      <div class="mt-9 grid gap-px overflow-hidden border-y border-[#78816f]/20 bg-[#78816f]/20 sm:grid-cols-3">
+      <div class="mt-9 grid gap-px overflow-hidden border-y border-[#78816f]/20 bg-[#78816f]/20 sm:grid-cols-2">
         <div class="bg-[#f6f3eb] p-5"><p class="text-[0.58rem] uppercase tracking-[0.14em] text-[#7b8277]">Schema hiện tại</p><p class="mt-3 text-2xl font-semibold tabular-nums text-[#35402f]">{{ tableCount }} bảng</p></div>
         <div class="bg-[#f6f3eb] p-5"><p class="text-[0.58rem] uppercase tracking-[0.14em] text-[#7b8277]">API được lập chỉ mục</p><p class="mt-3 text-2xl font-semibold tabular-nums text-[#35402f]">{{ endpointCount }} endpoint</p></div>
-        <div class="bg-[#f6f3eb] p-5"><p class="text-[0.58rem] uppercase tracking-[0.14em] text-[#7b8277]">Quy trình trọng yếu</p><p class="mt-3 text-2xl font-semibold tabular-nums text-[#35402f]">{{ flows.length }} sơ đồ</p></div>
       </div>
       <div class="mt-10 grid gap-10 lg:grid-cols-[0.72fr_1.28fr]">
         <aside>
           <p class="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#75806f]">Bắt đầu từ đâu</p>
           <h2 class="mt-3 max-w-sm text-2xl font-semibold tracking-[-0.035em] text-[#30392d]">Đi từ câu hỏi đến đúng lớp của hệ thống.</h2>
-          <p class="mt-4 max-w-sm text-xs leading-6 text-[#71796e]">Tìm nơi dữ liệu được lưu ở Database, cách gọi hệ thống ở API, và xem toàn bộ hành trình ở Luồng chức năng.</p>
+          <p class="mt-4 max-w-sm text-xs leading-6 text-[#71796e]">Tìm nơi dữ liệu được lưu ở Database và cách các thành phần giao tiếp qua API.</p>
         </aside>
         <div class="divide-y divide-[#78816f]/18 border-y border-[#78816f]/18">
           <NuxtLink v-for="item in tabs.slice(1)" :key="item.value" :to="tabTo(item.value)" class="group grid grid-cols-[40px_1fr_auto] items-center gap-4 py-5 active:translate-y-px">
             <span class="grid size-10 place-items-center rounded-full bg-[#e6e3d9] text-[#5d6b57]"><AppIcon :name="item.icon" :size="17" /></span>
-            <div><h3 class="text-xs font-semibold text-[#30392d]">{{ item.label }}</h3><p class="mt-1 text-[0.67rem] text-[#747c71]">{{ item.value === 'database' ? 'Bảng, quan hệ và quy ước dữ liệu' : item.value === 'api' ? 'Endpoint, mục đích và phạm vi truy cập' : 'Sơ đồ từ giao diện đến kết quả nghiệp vụ' }}</p></div>
+            <div><h3 class="text-xs font-semibold text-[#30392d]">{{ item.label }}</h3><p class="mt-1 text-[0.67rem] text-[#747c71]">{{ item.value === 'database' ? 'Bảng, quan hệ và quy ước dữ liệu' : 'Endpoint, mục đích và phạm vi truy cập' }}</p></div>
             <AppIcon name="arrow" :size="15" class="text-[#7c8577] transition-transform group-hover:translate-x-1" />
           </NuxtLink>
         </div>
@@ -247,11 +198,5 @@ function tabTo(value: DocView) {
       </section>
     </template>
 
-    <template v-else>
-      <section class="mt-9">
-        <div class="grid gap-4 border-b border-[#78816f]/20 pb-7 md:grid-cols-[0.7fr_1.3fr]"><div><p class="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#75806f]">Từ thao tác đến dữ liệu</p><h2 class="mt-2 text-xl font-semibold tracking-[-0.03em]">Luồng hoạt động</h2></div><div><p class="max-w-xl text-xs leading-6 text-[#71796e]">Mỗi khối là một lớp xử lý. Đọc từ trái sang phải trên màn hình lớn hoặc từ trên xuống dưới trên điện thoại.</p><div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[0.58rem] uppercase tracking-[0.1em] text-[#7b8377]"><span>Client</span><span>API</span><span>Service</span><span>Database</span><span>Kết quả</span></div></div></div>
-        <div class="mt-8"><AdminFlowDiagram v-for="flow in flows" :id="flow.id" :key="flow.id" :title="flow.title" :description="flow.description" :steps="flow.steps" /></div>
-      </section>
-    </template>
   </section>
 </template>
