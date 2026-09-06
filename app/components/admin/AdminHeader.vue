@@ -34,6 +34,7 @@ watch(() => route.fullPath, () => { menuOpen.value = false })
             <div class="border-b border-[#78816f]/15 px-5 py-4"><p class="truncate text-xs font-semibold text-[#30392d]">{{ user?.fullName }}</p><p class="mt-1 truncate text-[0.66rem] text-[#7a8177]">{{ user?.email || user?.jobTitle }}</p></div>
             <div class="p-2">
               <NuxtLink to="/admin/ho-so" class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-xs text-[#4d5848] transition hover:bg-[#e9e5da]" role="menuitem"><AppIcon name="profile" :size="17" />Hồ sơ của bạn</NuxtLink>
+              <NuxtLink to="/admin/cau-hinh" class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-xs text-[#4d5848] transition hover:bg-[#e9e5da]" role="menuitem"><AppIcon name="settings" :size="17" />Cấu hình hệ thống</NuxtLink>
               <button type="button" class="flex w-full items-center gap-3 rounded-sm px-3 py-2.5 text-xs text-[#795047] transition hover:bg-[#efdfda]" role="menuitem" :disabled="logoutPending" @click="logout"><AppIcon name="logout" :size="17" />{{ logoutPending ? 'Đang đăng xuất…' : 'Đăng xuất' }}</button>
             </div>
           </div>
