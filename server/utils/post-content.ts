@@ -32,7 +32,8 @@ export function sanitizePostContent(content: string) {
 }
 
 export function plainTextFromPost(content: string) {
-  return sanitizeHtml(content, { allowedTags: [], allowedAttributes: {} })
+  const withBlockSpacing = content.replace(/<\/(?:p|h[1-6]|li|blockquote|pre|div)>|<br\s*\/?>/gi, ' ')
+  return sanitizeHtml(withBlockSpacing, { allowedTags: [], allowedAttributes: {} })
     .replace(/\s+/g, ' ')
     .trim()
 }
