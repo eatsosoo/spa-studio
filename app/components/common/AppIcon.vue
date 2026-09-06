@@ -10,6 +10,10 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-else-if="name === 'cart'"><path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></template>
     <template v-else-if="name === 'services'"><path d="M12 21c4.8 0 8-2.8 8-7.2-3.6 0-6.1 1.3-8 4.2-1.9-2.9-4.4-4.2-8-4.2C4 18.2 7.2 21 12 21Z"/><path d="M12 18c-2.7-2.3-3.6-5.8-1.8-9.5L12 5l1.8 3.5c1.8 3.7.9 7.2-1.8 9.5ZM9.7 10.2C8 8.8 6 8.3 3.5 8.6c.2 3 1.6 5 4.4 6.4M14.3 10.2c1.7-1.4 3.7-1.9 6.2-1.6-.2 3-1.6 5-4.4 6.4"/></template>
     <template v-else-if="name === 'warehouse'"><path d="m3 9 9-6 9 6v11H3Z"/><path d="M7 20v-7h10v7M3 9h18M9 16h6"/></template>
+    <template v-else-if="name === 'book'"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5Z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5Z"/></template>
+    <template v-else-if="name === 'database'"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></template>
+    <template v-else-if="name === 'api'"><path d="m8 9-3 3 3 3M16 9l3 3-3 3M14 5l-4 14"/></template>
+    <template v-else-if="name === 'flow'"><rect x="3" y="3" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M9 5.5h3a4 4 0 0 1 4 4v1M15 8l1 2.5L18 8M15 18.5h-3a4 4 0 0 1-4-4v-1M9 16l-1-2.5L6 16"/></template>
     <template v-else-if="name === 'calendar'"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></template>
     <template v-else-if="name === 'staff'"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0M18 4l1.5 1.5L22 3"/></template>
     <template v-else-if="name === 'posts'"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5"/></template>

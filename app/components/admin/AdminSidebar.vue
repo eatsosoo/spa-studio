@@ -5,11 +5,13 @@ defineEmits<{ close: [] }>()
 const route = useRoute()
 const { user } = useAdminAuth()
 const inventoryOpen = ref(route.path.startsWith('/admin/kho'))
+const documentationOpen = ref(route.path.startsWith('/admin/tai-lieu'))
 
 watch(
   () => route.path,
   path => {
     if (path.startsWith('/admin/kho')) inventoryOpen.value = true
+    if (path.startsWith('/admin/tai-lieu')) documentationOpen.value = true
   },
 )
 
@@ -33,12 +35,25 @@ const inventoryItems = [
   { label: 'Định mức dịch vụ', to: '/admin/kho/dinh-muc' },
   { label: 'Báo cáo kho', to: '/admin/kho/bao-cao' },
 ]
+const documentationItems = [
+  { label: 'Tổng quan', to: '/admin/tai-lieu' },
+  { label: 'Database', to: '/admin/tai-lieu?view=database' },
+  { label: 'API', to: '/admin/tai-lieu?view=api' },
+  { label: 'Luồng chức năng', to: '/admin/tai-lieu?view=flows' },
+]
 
 function isActive(to: string) {
   return to === '/admin' ? route.path === to : route.path.startsWith(to)
 }
 
 function isInventoryActive(to: string) {
+  const [path, query] = to.split('?')
+  if (route.path !== path) return false
+  const view = new URLSearchParams(query ?? '').get('view')
+  return view ? route.query.view === view : !route.query.view
+}
+
+function isDocumentationActive(to: string) {
   const [path, query] = to.split('?')
   if (route.path !== path) return false
   const view = new URLSearchParams(query ?? '').get('view')
@@ -64,7 +79,7 @@ function isInventoryActive(to: string) {
       </button>
     </div>
 
-    <div class="flex min-h-0 flex-1 flex-col px-3 py-6">
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-6">
       <p class="mb-3 px-3 text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#99a494]">Vận hành</p>
       <nav class="grid gap-1" aria-label="Điều hướng quản trị">
         <NuxtLink
@@ -108,6 +123,23 @@ function isInventoryActive(to: string) {
           <span>{{ item.label }}</span>
           <span v-if="item.to === '/admin/dat-lich'" class="ml-auto rounded-full bg-[#d9dfd2]/15 px-2 py-0.5 text-[0.64rem]">3</span>
         </NuxtLink>
+        <div class="mt-1">
+          <button
+            type="button"
+            class="admin-nav-item w-full text-left"
+            :class="route.path.startsWith('/admin/tai-lieu') ? 'admin-nav-item--active' : ''"
+            :aria-expanded="documentationOpen"
+            aria-controls="documentation-submenu"
+            @click="documentationOpen = !documentationOpen"
+          >
+            <AppIcon name="book" :size="18" />
+            <span>Tài liệu</span>
+            <AppIcon name="chevron-down" :size="13" class="ml-auto opacity-60 transition-transform" :class="documentationOpen ? 'rotate-180' : ''" />
+          </button>
+          <div v-show="documentationOpen" id="documentation-submenu" class="ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3">
+            <NuxtLink v-for="child in documentationItems" :key="child.to" :to="child.to" class="rounded-sm px-3 py-2 text-[0.69rem] text-[#aeb8aa] transition hover:bg-white/[0.06] hover:text-white" :class="isDocumentationActive(child.to) ? 'bg-white/[0.08] text-[#f4f0e8]' : ''" @click="$emit('close')">{{ child.label }}</NuxtLink>
+          </div>
+        </div>
       </nav>
 
       <div class="mt-auto border-t border-white/10 px-3 pt-5">
