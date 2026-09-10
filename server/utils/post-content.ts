@@ -2,7 +2,7 @@ import sanitizeHtml from 'sanitize-html'
 
 const allowedTags = [
   'p', 'h2', 'h3', 'strong', 'em', 's', 'ul', 'ol', 'li', 'blockquote',
-  'hr', 'br', 'a', 'img', 'code', 'pre',
+  'hr', 'br', 'a', 'img', 'code', 'pre', 'div',
 ]
 
 export function sanitizePostContent(content: string) {
@@ -21,12 +21,18 @@ export function sanitizePostContent(content: string) {
     allowedAttributes: {
       a: ['href', 'target', 'rel'],
       img: ['src', 'alt', 'title'],
+      div: ['class', 'data-product-id'],
       code: ['class'],
     },
     allowedSchemes: ['http', 'https', 'mailto'],
     allowedSchemesByTag: { img: ['http', 'https'] },
     transformTags: {
-      a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer' }, true),
+      a: (tagName, attribs) => {
+        const href = attribs.href ?? ''
+        const internal = href.startsWith('/') && !href.startsWith('//')
+        const nextAttributes: Record<string, string> = internal ? { href } : { ...attribs, rel: 'noopener noreferrer' }
+        return { tagName, attribs: nextAttributes }
+      },
     },
   })
 }

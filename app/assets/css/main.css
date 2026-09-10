@@ -487,6 +487,12 @@ select {
   margin-top: 1.45em;
 }
 
+.article-html-segment > * + *,
+.article-content > .article-product-block + .article-html-segment,
+.article-content > .article-html-segment + .article-product-block {
+  margin-top: 1.45em;
+}
+
 .article-content h2,
 .article-content h3 {
   color: #30382c;
@@ -580,6 +586,73 @@ select {
   color: #a2a79e;
   content: attr(data-placeholder);
   pointer-events: none;
+}
+
+.article-product-node,
+.article-product-block {
+  margin-block: 2.4rem;
+}
+
+.article-product-block {
+  border-top: 1px solid rgba(88, 101, 80, 0.32);
+  border-bottom: 1px solid rgba(88, 101, 80, 0.32);
+  padding-block: 1.2rem;
+  font-family: "Manrope", sans-serif;
+}
+
+.article-product-block h3 {
+  margin-top: 0.35rem;
+  color: #30382c;
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.65rem;
+  font-weight: 400;
+  line-height: 1.08;
+}
+
+.article-product-eyebrow {
+  color: #6d7867;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.article-product-description {
+  margin-top: 0.55rem;
+  color: #737a70;
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.article-product-price {
+  margin-top: 0.65rem;
+  color: #465140;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.article-product-skeleton {
+  height: 9rem;
+  background: linear-gradient(90deg, #e8e3d8 25%, #f2eee5 45%, #e8e3d8 65%);
+  background-size: 220% 100%;
+  animation: media-shimmer 1.4s ease-in-out infinite;
+}
+
+.admin-control {
+  border: 1px solid rgba(89, 102, 80, 0.3);
+  border-radius: 0.3rem;
+  background: rgba(255, 253, 247, 0.62);
+  padding-block: 0.7rem;
+  padding-right: 0.85rem;
+  color: #30382c;
+  font-size: 0.78rem;
+  outline: none;
+}
+
+.admin-control:focus { border-color: #596650; background: #fbf8f0; }
+
+@keyframes media-shimmer {
+  to { background-position: -120% 0; }
 }
 
 .product-card {

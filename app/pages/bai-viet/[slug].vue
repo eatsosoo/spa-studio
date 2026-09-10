@@ -20,6 +20,10 @@ const route = useRoute()
 const copied = ref(false)
 const { data: response } = await useAsyncData(`post-${route.params.slug}`, () => $fetch<{ data: PostDetail }>(`/api/posts/${route.params.slug}`))
 const post = computed(() => response.value!.data)
+const config = useRuntimeConfig()
+const siteUrl = String(config.public.siteUrl).replace(/\/$/, '')
+const canonical = computed(() => `${siteUrl}/bai-viet/${post.value.slug}`)
+const absoluteImage = computed(() => post.value.featuredImage ? new URL(post.value.featuredImage, `${siteUrl}/`).href : undefined)
 
 function formatDate(value: string | null) {
   if (!value) return ''
@@ -37,8 +41,23 @@ useSeoMeta({
   description: () => post.value.metaDescription || post.value.excerpt,
   ogTitle: () => post.value.metaTitle || post.value.title,
   ogDescription: () => post.value.metaDescription || post.value.excerpt,
-  ogImage: () => post.value.featuredImage || undefined,
+  ogImage: () => absoluteImage.value,
+  ogUrl: () => canonical.value,
+  ogType: 'article',
+  twitterCard: 'summary_large_image',
+  twitterTitle: () => post.value.metaTitle || post.value.title,
+  twitterDescription: () => post.value.metaDescription || post.value.excerpt,
+  twitterImage: () => absoluteImage.value,
+  articlePublishedTime: () => post.value.publishedAt || undefined,
+  articleModifiedTime: () => post.value.updatedAt || undefined,
 })
+useHead(() => ({
+  link: [{ rel: 'canonical', href: canonical.value }],
+  script: [
+    { type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.value.title, description: post.value.metaDescription || post.value.excerpt, image: absoluteImage.value ? [absoluteImage.value] : undefined, datePublished: post.value.publishedAt, dateModified: post.value.updatedAt, author: { '@type': 'Person', name: post.value.author, url: `${siteUrl}/bai-viet` }, mainEntityOfPage: canonical.value }) },
+    { type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Trang chủ', item: siteUrl }, { '@type': 'ListItem', position: 2, name: 'Bài viết', item: `${siteUrl}/bai-viet` }, { '@type': 'ListItem', position: 3, name: post.value.title, item: canonical.value }] }) },
+  ],
+}))
 </script>
 
 <template>

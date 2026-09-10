@@ -28,4 +28,11 @@ describe('post content utilities', () => {
   it('returns an empty string for blank content', () => {
     expect(sanitizePostContent('   ')).toBe('')
   })
+
+  it('giữ URL nội bộ tương đối và dữ liệu product block', () => {
+    const content = sanitizePostContent('<p><a href="/bai-viet/cham-da">Đọc tiếp</a></p><div class="article-product-node" data-product-id="12"></div>')
+    expect(content).toContain('href="/bai-viet/cham-da"')
+    expect(content).not.toContain('target=')
+    expect(content).toContain('data-product-id="12"')
+  })
 })

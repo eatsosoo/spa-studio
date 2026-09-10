@@ -11,6 +11,9 @@ export default defineNuxtConfig({
     adminBootstrapUsername: process.env.ADMIN_BOOTSTRAP_USERNAME,
     adminBootstrapPassword: process.env.ADMIN_BOOTSTRAP_PASSWORD,
     adminBootstrapEmail: process.env.ADMIN_BOOTSTRAP_EMAIL,
+    public: {
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+    },
   },
   vite: {
     plugins: [tailwindcss()],
