@@ -1,8 +1,9 @@
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { mediaPath } from '../../../../utils/post-media'
+import { ensureMediaRoot, mediaPath } from '../../../../utils/post-media'
 
 export default defineEventHandler(async (event) => {
+  await ensureMediaRoot()
   const folder = getRouterParam(event, 'folder') ?? ''
   const filename = getRouterParam(event, 'filename') ?? ''
   if (!/^(?:[a-z0-9-]+|\.thumbs)$/.test(folder) || !/^[a-z0-9][a-z0-9-]*\.webp$/.test(filename)) throw createError({ statusCode: 404, statusMessage: 'Không tìm thấy ảnh.' })
