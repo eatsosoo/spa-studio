@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useSeoMeta({ robots: 'noindex, nofollow' })
 import type { CartProduct } from '~/types'
 import { formatPrice } from '~/utils/currency'
 
@@ -63,7 +64,8 @@ onMounted(() => {
 <template>
   <div class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
     <SiteHeader compact />
-    <main class="px-5 pb-28 pt-12 md:px-10 md:pt-20 lg:px-14"><div class="mx-auto max-w-[1300px]"><div class="border-b border-[#78816f]/25 pb-9"><p class="section-label">Thông tin giao hàng</p><h1 class="mt-4 font-display text-5xl font-light tracking-[-0.045em] md:text-7xl">Hoàn tất đơn hàng.</h1></div>
+    <main class="px-5 pb-28 pt-12 md:px-10 md:pt-20 lg:px-14">
+      <CheckoutSteps :current="2" /><div class="mx-auto max-w-[1300px]"><div class="border-b border-[#78816f]/25 pb-9"><p class="section-label">Thông tin giao hàng</p><h1 class="mt-4 font-display text-5xl font-light tracking-[-0.045em] md:text-7xl">Hoàn tất đơn hàng.</h1></div>
       <div v-if="checking" class="my-14 h-64 animate-pulse bg-[#e2ddd1]" />
       <div v-else-if="!hydrated || !lines.length" class="py-20 text-center"><p class="text-sm text-[#6d7469]">Giỏ hàng đang trống.</p><NuxtLink to="/san-pham" class="button-primary mt-6">Chọn sản phẩm</NuxtLink></div>
       <div v-else class="grid gap-14 py-12 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-24">

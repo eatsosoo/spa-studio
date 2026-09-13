@@ -2,6 +2,7 @@ import { and, desc, eq, isNull, ne } from 'drizzle-orm'
 import { postCategories, posts, users } from '../../database/schema'
 import { useDatabase } from '../../database/client'
 import { plainTextFromPost, sanitizePostContent } from '../../utils/post-content'
+import { getPostProducts } from '../../services/store-products'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -20,6 +21,7 @@ export default defineEventHandler(async (event) => {
       updatedAt: posts.updatedAt,
       metaTitle: posts.metaTitle,
       metaDescription: posts.metaDescription,
+      relatedProductIds: posts.relatedProductIds,
       category: postCategories.name,
       author: users.username,
     })
@@ -39,6 +41,7 @@ export default defineEventHandler(async (event) => {
     .limit(2)
 
   const content = sanitizePostContent(post.content)
+  const productRecommendations = await getPostProducts(Array.isArray(post.relatedProductIds) ? post.relatedProductIds : [])
   return {
     data: {
       ...post,
@@ -47,6 +50,8 @@ export default defineEventHandler(async (event) => {
       category: post.category ?? 'Chuyện từ MIÊN',
       author: post.author ?? 'MIÊN',
       related,
+      relatedProducts: productRecommendations.products,
+      relatedProductsSource: productRecommendations.source,
     },
   }
 })

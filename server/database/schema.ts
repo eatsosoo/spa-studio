@@ -667,6 +667,7 @@ export const posts = mysqlTable('posts', {
   metaDescription: varchar('meta_description', { length: 500 }),
   focusKeyword: varchar('focus_keyword', { length: 160 }),
   secondaryKeywords: json('secondary_keywords'),
+  relatedProductIds: json('related_product_ids').$type<number[]>(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
   deletedAt: timestamp('deleted_at', { mode: 'date' }),

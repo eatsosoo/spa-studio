@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useSeoMeta({ robots: 'noindex, nofollow' })
 const sidebarOpen = ref(false)
 const { preferences, fontScale } = useAdminPreferences()
 

@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise'
 import { randomBytes, scrypt as scryptCallback } from 'node:crypto'
 import { promisify } from 'node:util'
+import { detailedPostSeeds } from './seed-posts.mjs'
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('Thiếu DATABASE_URL. Hãy cấu hình file .env trước khi chạy seed.')
@@ -199,7 +200,7 @@ try {
   }
 
   const postCategoryIds = {}
-  for (const category of [['Chăm sóc tại nhà', 'cham-soc-tai-nha'], ['Hiểu về cơ thể', 'hieu-ve-co-the'], ['Câu chuyện MIÊN', 'cau-chuyen-mien']]) {
+  for (const category of [['Chăm sóc tại nhà', 'cham-soc-tai-nha'], ['Hiểu về cơ thể', 'hieu-ve-co-the'], ['Câu chuyện MIÊN', 'cau-chuyen-mien'], ['Chăm sóc sức khỏe', 'cham-soc-suc-khoe']]) {
     postCategoryIds[category[0]] = await upsert(
       'INSERT INTO post_categories (name, slug) VALUES (?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), name = VALUES(name)',
       category,
@@ -215,6 +216,15 @@ try {
     await upsert(
       'INSERT INTO posts (category_id, author_id, title, slug, excerpt, content, status, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), category_id = VALUES(category_id), author_id = VALUES(author_id), title = VALUES(title), excerpt = VALUES(excerpt), content = VALUES(content), status = VALUES(status), deleted_at = NULL',
       [postCategoryIds[post[0]], ownerUser.id, post[1], post[2], post[3], post[4], post[5], post[5] === 'published' ? new Date() : null],
+    )
+  }
+
+  for (const post of detailedPostSeeds) {
+    await upsert(
+      `INSERT INTO posts (category_id, author_id, title, slug, excerpt, content, featured_image_url, meta_title, meta_description, focus_keyword, secondary_keywords, status, published_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?)
+       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), category_id = VALUES(category_id), author_id = VALUES(author_id), title = VALUES(title), excerpt = VALUES(excerpt), content = VALUES(content), featured_image_url = VALUES(featured_image_url), meta_title = VALUES(meta_title), meta_description = VALUES(meta_description), focus_keyword = VALUES(focus_keyword), secondary_keywords = VALUES(secondary_keywords), status = 'published', published_at = COALESCE(published_at, VALUES(published_at)), deleted_at = NULL`,
+      [postCategoryIds[post.category], ownerUser.id, post.title, post.slug, post.excerpt, post.content, `/images/articles/${post.slug}.webp`, post.metaTitle, post.metaDescription, post.focusKeyword, JSON.stringify(post.secondaryKeywords), new Date()],
     )
   }
 

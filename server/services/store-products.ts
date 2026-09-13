@@ -1,5 +1,5 @@
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
-import { branches, inventoryLocations, inventoryStocks, productCategories, products } from '../database/schema'
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { branches, inventoryLocations, inventoryStocks, productCategories, products, salesOrderItems, salesOrders } from '../database/schema'
 import { useDatabase } from '../database/client'
 
 type Executor = Pick<ReturnType<typeof useDatabase>, 'select'>
@@ -72,4 +72,26 @@ export async function getStoreProducts(ids?: number[]) {
 export async function getStoreProductBySlug(slug: string) {
   const rows = await getStoreProducts()
   return rows.find(product => product.slug === slug)
+}
+
+export async function getPostProducts(selectedIds: number[] = [], limit = 4) {
+  const normalizedIds = [...new Set(selectedIds.map(Number).filter(value => Number.isInteger(value) && value > 0))].slice(0, limit)
+  if (normalizedIds.length) {
+    const selected = await getStoreProducts(normalizedIds)
+    const order = new Map(normalizedIds.map((id, index) => [id, index]))
+    if (selected.length) return { products: selected.sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)), source: 'selected' as const }
+  }
+
+  const db = useDatabase()
+  const sales = await db.select({ productId: salesOrderItems.productId, sold: sql<number>`coalesce(sum(${salesOrderItems.quantity}), 0)`.mapWith(Number) })
+    .from(salesOrderItems)
+    .innerJoin(salesOrders, eq(salesOrderItems.orderId, salesOrders.id))
+    .where(and(inArray(salesOrders.status, ['confirmed', 'paid']), sql`${salesOrderItems.productId} is not null`))
+    .groupBy(salesOrderItems.productId)
+    .orderBy(desc(sql`sum(${salesOrderItems.quantity})`))
+  const soldByProduct = new Map(sales.map(row => [Number(row.productId), row.sold]))
+  const available = (await getStoreProducts()).filter(product => product.stock > 0)
+    .sort((a, b) => (soldByProduct.get(b.id) ?? 0) - (soldByProduct.get(a.id) ?? 0) || a.name.localeCompare(b.name, 'vi'))
+    .slice(0, limit)
+  return { products: available, source: 'bestsellers' as const }
 }

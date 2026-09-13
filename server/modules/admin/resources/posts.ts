@@ -16,7 +16,7 @@ async function categoryId(db: ReturnType<typeof useDatabase>, name: string) {
 
 async function listPosts() {
   const db = useDatabase()
-  const rows = await db.select({ id: posts.id, slug: posts.slug, title: posts.title, category: postCategories.name, author: users.username, summary: posts.excerpt, content: posts.content, featuredImage: posts.featuredImageUrl, metaTitle: posts.metaTitle, metaDescription: posts.metaDescription, focusKeyword: posts.focusKeyword, secondaryKeywords: posts.secondaryKeywords, postStatus: posts.status, updatedAt: posts.updatedAt, publishedAt: posts.publishedAt }).from(posts)
+  const rows = await db.select({ id: posts.id, slug: posts.slug, title: posts.title, category: postCategories.name, author: users.username, summary: posts.excerpt, content: posts.content, featuredImage: posts.featuredImageUrl, metaTitle: posts.metaTitle, metaDescription: posts.metaDescription, focusKeyword: posts.focusKeyword, secondaryKeywords: posts.secondaryKeywords, relatedProductIds: posts.relatedProductIds, postStatus: posts.status, updatedAt: posts.updatedAt, publishedAt: posts.publishedAt }).from(posts)
     .leftJoin(postCategories, eq(posts.categoryId, postCategories.id)).leftJoin(users, eq(posts.authorId, users.id))
     .where(isNull(posts.deletedAt)).orderBy(desc(posts.updatedAt))
   return rows.map(row => ({ ...row, category: row.category ?? 'Chưa phân loại', author: row.author ?? 'MIÊN', summary: row.summary ?? '', updatedAt: dateVi(row.updatedAt), status: reverseStatus(postStatuses, row.postStatus), postStatus: undefined }))
@@ -29,7 +29,8 @@ async function savePost(id: number | null, body: Record<string, unknown>) {
   const content = sanitizePostContent(textValue(body, 'content')!)
   if (!content) throw createError({ statusCode: 422, statusMessage: 'Nội dung bài viết là bắt buộc.' })
   const secondaryKeywords = String(body.secondaryKeywords ?? '').split(',').map(item => item.trim()).filter(Boolean).slice(0, 8)
-  const values = { title, categoryId: await categoryId(db, textValue(body, 'category')!), excerpt: textValue(body, 'summary', false), content, featuredImageUrl: textValue(body, 'featuredImage', false), metaTitle: textValue(body, 'metaTitle', false), metaDescription: textValue(body, 'metaDescription', false), focusKeyword: textValue(body, 'focusKeyword', false), secondaryKeywords, status: postStatus }
+  const relatedProductIds = [...new Set((Array.isArray(body.relatedProductIds) ? body.relatedProductIds : []).map(Number).filter(value => Number.isInteger(value) && value > 0))].slice(0, 4)
+  const values = { title, categoryId: await categoryId(db, textValue(body, 'category')!), excerpt: textValue(body, 'summary', false), content, featuredImageUrl: textValue(body, 'featuredImage', false), metaTitle: textValue(body, 'metaTitle', false), metaDescription: textValue(body, 'metaDescription', false), focusKeyword: textValue(body, 'focusKeyword', false), secondaryKeywords, relatedProductIds, status: postStatus }
   if (id) {
     const [existing] = await db.select({ publishedAt: posts.publishedAt, slug: posts.slug }).from(posts).where(and(eq(posts.id, id), isNull(posts.deletedAt))).limit(1)
     if (!existing) throw createError({ statusCode: 404, statusMessage: 'Không tìm thấy bài viết.' })

@@ -12,13 +12,19 @@ const { data: productsResponse } = await useAsyncData('store-products', () => $f
 const relatedProducts = computed(() => (productsResponse.value?.data ?? []).filter(item => item.id !== product.value?.id).slice(0, 4))
 
 useHead({ title: () => `${product.value?.name ?? 'Sản phẩm'} | MIÊN Spa` })
-useSeoMeta({ description: () => product.value?.shortDescription ?? '' })
+const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
+const canonical = computed(() => siteUrl + '/san-pham/' + product.value!.slug)
+useSeoMeta({ description: () => product.value?.shortDescription ?? '', ogTitle: () => product.value?.name, ogDescription: () => product.value?.shortDescription, ogImage: () => new URL(product.value!.image, siteUrl).href, ogUrl: () => canonical.value, twitterCard: 'summary_large_image' })
+useHead(() => ({ link: [{ rel: 'canonical', href: canonical.value }], script: [{ type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: product.value!.name, description: product.value!.description, image: new URL(product.value!.image, siteUrl).href, sku: product.value!.sku, offers: { '@type': 'Offer', url: canonical.value, priceCurrency: 'VND', price: product.value!.price, availability: product.value!.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' } }).replace(/</g, '\\u003c') }] }))
 
 const quantity = ref(1)
 const added = ref(false)
 const { add } = useCart()
 let addedTimer: number | undefined
 
+async function buyNow() {
+  if (product.value && add(product.value, quantity.value)) await navigateTo('/thanh-toan')
+}
 function addToBag() {
   if (!product.value || !add(product.value, quantity.value)) return
   added.value = true
@@ -45,7 +51,7 @@ onBeforeUnmount(() => { if (addedTimer) clearTimeout(addedTimer) })
 
           <div class="self-center lg:pr-[5vw]">
             <p class="section-label">{{ product.size }} · {{ product.sku }}</p>
-            <h1 class="mt-6 font-display text-[clamp(3.7rem,6.5vw,7rem)] font-light leading-[0.86] tracking-[-0.055em]">{{ product.name }}</h1>
+            <h1 class="mt-6 font-display text-[clamp(2.7rem,4.5vw,4.8rem)] font-light leading-[0.86] tracking-[-0.055em]">{{ product.name }}</h1>
             <p class="mt-8 max-w-[50ch] text-sm leading-7 text-[#62695f]">{{ product.description }}</p>
             <p class="mt-8 text-xl font-semibold tabular-nums tracking-[-0.025em]">{{ formatPrice(product.price) }}</p>
 
@@ -61,8 +67,10 @@ onBeforeUnmount(() => { if (addedTimer) clearTimeout(addedTimer) })
                 <template v-else>Thêm vào giỏ <AppIcon name="arrow" :size="16" /></template>
               </button>
             </div>
+            <button type="button" class="button-quiet mt-3 min-h-12 w-full justify-center" :disabled="product.stock <= 0" @click="buyNow">Mua ngay · Đến thanh toán</button>
+            <p v-if="added" role="status" class="mt-3 text-sm">Đã thêm sản phẩm. <NuxtLink to="/gio-hang" class="text-link">Xem giỏ hàng</NuxtLink></p>
             <p v-if="product.stock > 0 && product.stock <= 10" class="mt-3 text-[0.68rem] font-medium text-[#8a5e4e]">Chỉ còn {{ product.stock }} sản phẩm khả dụng.</p>
-            <p class="mt-4 text-[0.68rem] text-[#777e73]">Miễn phí giao hàng tại TP. Hồ Chí Minh cho đơn từ 1.200.000đ.</p>
+            <p class="mt-4 text-[0.68rem] text-[#777e73]">Phí giao hàng 40.000đ. Miễn phí cho đơn từ 1.200.000đ. Thanh toán khi nhận hàng hoặc chuyển khoản.</p>
 
             <div class="mt-11 divide-y divide-[#78816f]/22 border-y border-[#78816f]/22">
               <details open class="product-detail-section">

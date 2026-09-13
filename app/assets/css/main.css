@@ -895,3 +895,13 @@ select {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Shared storefront accessibility and reading rhythm. */
+:focus-visible { outline: 2px solid #4c5d43; outline-offset: 4px; }
+.article-content h2, .article-content h3 { scroll-margin-top: 2rem; }
+.article-content { overflow-wrap: anywhere; }
+.nav-link.router-link-exact-active { color: #34412f; text-decoration: underline; text-underline-offset: 8px; }
+@media (max-width: 767px) { .button-primary, .button-quiet, .store-filter, .mobile-nav-link { min-height: 44px; } }
+
+/* Vietnamese accents need comfortable line spacing, including display headlines. */
+main h1.font-display, main h2.font-display { line-height: 1.12; }

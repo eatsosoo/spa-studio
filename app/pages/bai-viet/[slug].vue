@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Product } from '~/types'
+import { articleReading } from '~/utils/articleReading'
 type RelatedPost = { slug: string; title: string; featuredImage: string | null; publishedAt: string | null }
 type PostDetail = {
   id: number
@@ -14,12 +16,19 @@ type PostDetail = {
   category: string
   author: string
   related: RelatedPost[]
+  relatedProducts: Product[]
+  relatedProductsSource: 'selected' | 'bestsellers'
 }
 
 const route = useRoute()
 const copied = ref(false)
-const { data: response } = await useAsyncData(`post-${route.params.slug}`, () => $fetch<{ data: PostDetail }>(`/api/posts/${route.params.slug}`))
+const { data: response, error: fetchError } = await useAsyncData(`post-${route.params.slug}`, () => $fetch<{ data: PostDetail }>(`/api/posts/${route.params.slug}`))
+if (!response.value?.data) throw createError({ statusCode: fetchError.value?.statusCode || 404, statusMessage: fetchError.value?.statusCode === 404 ? 'Không tìm thấy bài viết.' : 'Chưa thể tải bài viết. Vui lòng thử lại.' })
 const post = computed(() => response.value!.data)
+const reading = computed(() => articleReading(post.value.content))
+const shareError = ref('')
+let shareTimer: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(shareTimer))
 const config = useRuntimeConfig()
 const siteUrl = String(config.public.siteUrl).replace(/\/$/, '')
 const canonical = computed(() => `${siteUrl}/bai-viet/${post.value.slug}`)
@@ -31,9 +40,13 @@ function formatDate(value: string | null) {
 }
 
 async function copyLink() {
-  await navigator.clipboard.writeText(window.location.href)
-  copied.value = true
-  window.setTimeout(() => { copied.value = false }, 1800)
+  shareError.value = ''
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    copied.value = true
+    clearTimeout(shareTimer)
+    shareTimer = setTimeout(() => { copied.value = false }, 1800)
+  } catch { shareError.value = 'Không thể sao chép tự động. Bạn có thể sao chép địa chỉ trên thanh trình duyệt.' }
 }
 
 useSeoMeta({
@@ -54,8 +67,8 @@ useSeoMeta({
 useHead(() => ({
   link: [{ rel: 'canonical', href: canonical.value }],
   script: [
-    { type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.value.title, description: post.value.metaDescription || post.value.excerpt, image: absoluteImage.value ? [absoluteImage.value] : undefined, datePublished: post.value.publishedAt, dateModified: post.value.updatedAt, author: { '@type': 'Person', name: post.value.author, url: `${siteUrl}/bai-viet` }, mainEntityOfPage: canonical.value }) },
-    { type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Trang chủ', item: siteUrl }, { '@type': 'ListItem', position: 2, name: 'Bài viết', item: `${siteUrl}/bai-viet` }, { '@type': 'ListItem', position: 3, name: post.value.title, item: canonical.value }] }) },
+    { type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.value.title, description: post.value.metaDescription || post.value.excerpt, image: absoluteImage.value ? [absoluteImage.value] : undefined, datePublished: post.value.publishedAt, dateModified: post.value.updatedAt, author: { '@type': 'Person', name: post.value.author, url: `${siteUrl}/bai-viet` }, mainEntityOfPage: canonical.value }).replace(/</g, '\\u003c') },
+    { type: 'application/ld+json', innerHTML: JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Trang chủ', item: siteUrl }, { '@type': 'ListItem', position: 2, name: 'Bài viết', item: `${siteUrl}/bai-viet` }, { '@type': 'ListItem', position: 3, name: post.value.title, item: canonical.value }] }).replace(/</g, '\\u003c') },
   ],
 }))
 </script>
@@ -64,13 +77,14 @@ useHead(() => ({
   <div class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
     <SiteHeader compact />
     <main>
+      <p v-if="shareError" role="status" class="mx-auto max-w-3xl px-5 py-4 text-sm">{{ shareError }}</p>
       <article>
         <header class="px-5 pb-12 pt-14 md:px-10 md:pb-16 md:pt-20 lg:px-14">
           <div class="mx-auto grid max-w-[1400px] gap-10 lg:grid-cols-[0.34fr_1fr]">
             <div class="pt-2"><NuxtLink to="/bai-viet" class="admin-inline-link"><AppIcon name="arrow-left" :size="15" /> Tất cả bài viết</NuxtLink></div>
             <div class="max-w-[980px]">
-              <div class="flex flex-wrap items-center gap-3 text-[0.66rem] font-semibold uppercase tracking-[0.17em] text-[#6c7666]"><span>{{ post.category }}</span><span class="h-px w-8 bg-[#78816f]/45" /><time>{{ formatDate(post.publishedAt) }}</time></div>
-              <h1 class="mt-7 max-w-[940px] font-display text-[clamp(3.1rem,6vw,6.8rem)] font-light leading-[0.9] tracking-[-0.052em]">{{ post.title }}</h1>
+              <div class="flex flex-wrap items-center gap-3 text-[0.66rem] font-semibold uppercase tracking-[0.17em] text-[#6c7666]"><span>{{ post.category }}</span><span class="h-px w-8 bg-[#78816f]/45" /><time :datetime="post.publishedAt || undefined">{{ formatDate(post.publishedAt) }}</time><span>Khoảng {{ reading.minutes }} phút đọc</span></div>
+              <h1 class="mt-7 max-w-[940px] font-display text-[clamp(2.5rem,4.5vw,5rem)] font-light leading-[0.9] tracking-[-0.052em]">{{ post.title }}</h1>
               <p v-if="post.excerpt" class="mt-8 max-w-[64ch] text-base leading-8 text-[#656c61] md:text-lg">{{ post.excerpt }}</p>
               <div class="mt-9 flex items-center justify-between border-t border-[#78816f]/25 pt-5 text-xs text-[#71786d]"><span>Biên soạn bởi {{ post.author }}</span><button type="button" class="inline-flex items-center gap-2 font-semibold text-[#4b5945] transition hover:text-[#303c2b] active:translate-y-px" @click="copyLink"><AppIcon :name="copied ? 'check' : 'link'" :size="15" />{{ copied ? 'Đã sao chép' : 'Sao chép liên kết' }}</button></div>
             </div>
@@ -79,9 +93,10 @@ useHead(() => ({
 
         <div v-if="post.featuredImage" class="mx-auto max-w-[1600px] px-0 md:px-10 lg:px-14"><img :src="post.featuredImage" :alt="post.title" class="max-h-[760px] w-full object-cover"></div>
 
-        <div class="mx-auto grid max-w-[1180px] gap-12 px-5 py-16 md:px-10 md:py-24 lg:grid-cols-[170px_minmax(0,720px)] lg:gap-[8vw] lg:px-14">
-          <aside class="hidden border-t border-[#78816f]/25 pt-5 text-[0.66rem] leading-5 text-[#777e72] lg:block"><p class="font-semibold uppercase tracking-[0.14em] text-[#5f6b58]">Đọc chậm</p><p class="mt-3">Dành một khoảng không bị ngắt quãng cho bài viết này.</p></aside>
-          <ArticleBody :content="post.content" />
+        <div class="mx-auto grid max-w-[1400px] gap-12 px-5 py-16 md:px-10 md:py-24 lg:grid-cols-[150px_minmax(0,720px)_minmax(230px,300px)] lg:gap-[5vw] lg:px-14">
+          <aside class="self-start border-t border-[#78816f]/25 pt-5 text-xs leading-6 lg:sticky lg:top-8"><nav v-if="reading.headings.length" aria-label="Mục lục bài viết"><p class="section-label">Trong bài viết</p><a v-for="heading in reading.headings" :key="heading.id" :href="'#' + heading.id" class="mt-3 block hover:underline" :class="heading.level === 3 ? 'pl-3' : 'font-semibold'">{{ heading.title }}</a></nav><NuxtLink to="/kinh-nghiem" class="text-link mt-6 block">Kinh nghiệm sức khỏe</NuxtLink></aside>
+          <div class="min-w-0"><ArticleBody :content="reading.html" /><div class="mt-12 border-t border-[#78816f]/25 pt-8"><p class="section-label">Bước chăm sóc tiếp theo</p><h2 class="mt-3 font-display text-3xl">Chọn điều phù hợp với bạn.</h2><div class="mt-5 flex flex-wrap gap-3"><NuxtLink to="/san-pham" class="button-primary">Xem sản phẩm chăm sóc</NuxtLink><NuxtLink to="/?dat-lich=1" class="button-quiet">Đặt lịch tư vấn</NuxtLink></div></div></div>
+          <ArticleRelatedProducts :products="post.relatedProducts" :source="post.relatedProductsSource" />
         </div>
       </article>
 

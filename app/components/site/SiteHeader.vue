@@ -6,7 +6,7 @@ const { count } = useCart()
 </script>
 
 <template>
-  <header :class="compact ? 'relative' : 'absolute inset-x-0 top-0 z-20'">
+  <header :class="compact ? 'relative z-20' : 'absolute inset-x-0 top-0 z-20'">
     <div class="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-6 md:px-10 lg:px-14">
       <NuxtLink to="/" class="group flex items-center gap-3" aria-label="MIÊN Spa, về trang chủ">
         <span class="grid size-9 place-items-center rounded-full border border-[#4c5d43]/35 transition-transform duration-500 group-hover:rotate-45">
@@ -19,32 +19,32 @@ const { count } = useCart()
         <NuxtLink to="/#lieu-trinh" class="nav-link">Liệu trình</NuxtLink>
         <NuxtLink to="/san-pham" class="nav-link">Sản phẩm</NuxtLink>
         <NuxtLink to="/bai-viet" class="nav-link">Bài viết</NuxtLink>
-        <NuxtLink to="/#khong-gian" class="nav-link">Không gian</NuxtLink>
+        <NuxtLink to="/kinh-nghiem" class="nav-link">Chăm sóc sức khỏe</NuxtLink>
         <NuxtLink to="/#cau-chuyen" class="nav-link">Câu chuyện</NuxtLink>
       </nav>
 
       <div class="flex items-center gap-3">
         <slot name="action">
-          <NuxtLink to="/?dat-lich=1" class="button-quiet hidden sm:inline-flex">Đặt một khoảng nghỉ</NuxtLink>
+          <div class="hidden sm:block"><NuxtLink to="/?dat-lich=1" class="button-quiet">Đặt một khoảng nghỉ</NuxtLink></div>
         </slot>
         <NuxtLink to="/gio-hang" class="relative grid size-10 place-items-center rounded-full border border-[#596650]/35 text-[#3f493a] transition hover:bg-[#e5e0d5] active:scale-[0.98]" aria-label="Mở giỏ hàng">
           <AppIcon name="cart" :size="18" />
           <span v-if="count" class="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#4c5d43] px-1 text-[0.6rem] font-semibold text-[#f7f2e8]">{{ count > 99 ? '99+' : count }}</span>
         </NuxtLink>
-        <button type="button" class="grid size-10 place-items-center rounded-full border border-[#596650]/35 lg:hidden" aria-label="Mở menu" @click="isMenuOpen = !isMenuOpen">
+        <button type="button" class="grid size-10 place-items-center rounded-full border border-[#596650]/35 lg:hidden" :aria-expanded="isMenuOpen" aria-controls="site-mobile-menu" :aria-label="isMenuOpen ? 'Đóng menu' : 'Mở menu'" @click="isMenuOpen = !isMenuOpen">
           <AppIcon :name="isMenuOpen ? 'close' : 'menu'" />
         </button>
       </div>
     </div>
 
     <Transition name="fade">
-      <nav v-if="isMenuOpen" class="absolute inset-x-5 top-[82px] grid gap-1 rounded-md border border-[#78816f]/20 bg-[#f3efe5]/95 p-3 shadow-[0_18px_45px_rgba(47,57,42,0.12)] backdrop-blur-xl lg:hidden" aria-label="Điều hướng mobile">
+      <nav v-if="isMenuOpen" id="site-mobile-menu" @keydown.esc="isMenuOpen = false" class="absolute inset-x-5 top-[82px] grid gap-1 rounded-md border border-[#78816f]/20 bg-[#f3efe5]/95 p-3 shadow-[0_18px_45px_rgba(47,57,42,0.12)] backdrop-blur-xl lg:hidden" aria-label="Điều hướng mobile">
         <NuxtLink to="/#lieu-trinh" class="mobile-nav-link" @click="isMenuOpen = false">Liệu trình</NuxtLink>
         <NuxtLink to="/san-pham" class="mobile-nav-link" @click="isMenuOpen = false">Sản phẩm</NuxtLink>
         <NuxtLink to="/gio-hang" class="mobile-nav-link" @click="isMenuOpen = false">Giỏ hàng ({{ count }})</NuxtLink>
         <NuxtLink to="/bai-viet" class="mobile-nav-link" @click="isMenuOpen = false">Bài viết</NuxtLink>
         <NuxtLink to="/#khong-gian" class="mobile-nav-link" @click="isMenuOpen = false">Không gian</NuxtLink>
-        <NuxtLink to="/admin" class="mobile-nav-link" @click="isMenuOpen = false">Quản trị</NuxtLink>
+        <NuxtLink to="/kinh-nghiem" class="mobile-nav-link" @click="isMenuOpen = false">Kinh nghiệm chăm sóc sức khỏe</NuxtLink>
       </nav>
     </Transition>
   </header>

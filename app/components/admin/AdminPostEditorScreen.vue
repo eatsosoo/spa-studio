@@ -4,6 +4,7 @@ import type { SeoInput } from '~/utils/postSeo'
 type PostForm = {
   title: string; category: string; summary: string; content: string; featuredImage: string; status: string
   metaTitle: string; metaDescription: string; slug: string; focusKeyword: string; secondaryKeywords: string
+  relatedProductIds: number[]
 }
 
 const props = defineProps<{ postId?: number }>()
@@ -16,7 +17,7 @@ const previewViewport = ref<'desktop' | 'mobile'>('desktop')
 const showMedia = ref(false)
 const dirty = ref(false)
 const initialized = ref(false)
-const form = reactive<PostForm>({ title: '', category: '', summary: '', content: '<p></p>', featuredImage: '', status: 'Bản nháp', metaTitle: '', metaDescription: '', slug: '', focusKeyword: '', secondaryKeywords: '' })
+const form = reactive<PostForm>({ title: '', category: useRoute().query.category === 'health' ? 'Chăm sóc sức khỏe' : '', summary: '', content: '<p></p>', featuredImage: '', status: 'Bản nháp', metaTitle: '', metaDescription: '', slug: '', focusKeyword: '', secondaryKeywords: '', relatedProductIds: [] })
 const draftKey = computed(() => `mien-post-draft-${props.postId ?? 'new'}`)
 
 const { data: optionsResponse } = await useAsyncData('admin-post-options', () => $fetch<{ data: { postCategories: string[] } }>('/api/admin/form-options'))
@@ -34,6 +35,7 @@ if (postResponse.value?.data) {
   form.metaDescription = String(postResponse.value.data.metaDescription ?? '')
   form.focusKeyword = String(postResponse.value.data.focusKeyword ?? '')
   form.secondaryKeywords = Array.isArray(postResponse.value.data.secondaryKeywords) ? postResponse.value.data.secondaryKeywords.join(', ') : String(postResponse.value.data.secondaryKeywords ?? '')
+  form.relatedProductIds = Array.isArray(postResponse.value.data.relatedProductIds) ? postResponse.value.data.relatedProductIds.map(Number).filter(Number.isInteger) : []
 }
 if (!form.category && categories.value.length) form.category = categories.value[0] ?? ''
 if (import.meta.client) {
@@ -125,6 +127,7 @@ useHead({ title: `${props.postId ? 'Chỉnh sửa' : 'Bài viết mới'} | MIÊ
         <aside class="space-y-7 xl:sticky xl:top-6">
           <div class="border-t border-[#78816f]/25 pt-5"><h2 class="text-xs font-semibold text-[#394433]">Xuất bản</h2><div class="mt-4 grid gap-4"><label class="admin-field" data-seo-field="status"><span>Trạng thái</span><select v-model="form.status"><option>Bản nháp</option><option>Đã xuất bản</option><option>Lưu trữ</option></select></label><label class="admin-field"><span>Chuyên mục</span><select v-model="form.category"><option value="" disabled>Chọn chuyên mục</option><option v-for="category in categories" :key="category">{{ category }}</option></select></label><label class="admin-field" data-seo-field="slug"><span>Slug <small v-if="postId" class="font-normal text-[#858a81]">được khóa sau lần xuất bản đầu</small></span><input v-model="form.slug" placeholder="duong-dan-bai-viet"></label></div></div>
           <div class="border-t border-[#78816f]/25 pt-5" data-seo-field="featuredImage"><div class="flex items-center justify-between"><h2 class="text-xs font-semibold text-[#394433]">Ảnh đại diện</h2><button v-if="form.featuredImage" type="button" class="text-[0.66rem] font-semibold text-[#7a4a41]" @click="form.featuredImage = ''">Gỡ ảnh</button></div><button type="button" class="mt-4 grid aspect-[16/10] w-full place-items-center overflow-hidden border border-dashed border-[#78816f]/35 bg-[#efebe1] text-[#65705f] transition hover:bg-[#e7e2d6]" @click="showMedia = true"><img v-if="form.featuredImage" :src="form.featuredImage" alt="Ảnh đại diện bài viết" class="h-full w-full object-cover"><span v-else class="flex flex-col items-center gap-2 text-[0.68rem]"><AppIcon name="image" :size="22"/>Chọn từ thư viện</span></button></div>
+          <AdminRelatedProducts v-model="form.relatedProductIds" />
           <div class="border-t border-[#78816f]/25 pt-5"><h2 class="text-xs font-semibold text-[#394433]">Tìm kiếm & chia sẻ</h2><div class="mt-4 grid gap-4"><label class="admin-field" data-seo-field="metaTitle"><span>Tiêu đề SEO</span><input v-model="form.metaTitle" maxlength="250" placeholder="Mặc định dùng tiêu đề bài viết"></label><label class="admin-field" data-seo-field="metaDescription"><span>Mô tả SEO</span><textarea v-model="form.metaDescription" rows="3" maxlength="500" placeholder="Mặc định dùng mô tả ngắn"/></label></div></div>
           <AdminPostSeoPanel :model-value="seoInput" :secondary-keywords="form.secondaryKeywords" @update:focus-keyword="form.focusKeyword = $event" @update:secondary-keywords="form.secondaryKeywords = $event" @focus="focusField"/>
         </aside>

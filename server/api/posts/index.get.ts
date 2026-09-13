@@ -30,5 +30,9 @@ export default defineEventHandler(async (event) => {
       author: row.author ?? 'MIÊN',
     }))
 
-  return paginateRows(data, event, 7)
+  const query = getQuery(event)
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd')
+  const search = normalize(String(query.q ?? '').trim().slice(0, 200))
+  const filtered = data.filter(row => (!query.category || row.category === query.category) && (!search || normalize(row.title + ' ' + row.excerpt).includes(search)))
+  return paginateRows(filtered, event, 7)
 })

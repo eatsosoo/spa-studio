@@ -11,5 +11,5 @@ export default defineEventHandler(async () => {
     db.select({ name: serviceCategories.name }).from(serviceCategories).where(eq(serviceCategories.isActive, true)).orderBy(asc(serviceCategories.name)),
     db.select({ name: postCategories.name }).from(postCategories).orderBy(asc(postCategories.name)),
   ])
-  return { data: { services: serviceRows.map(item => item.name), employees: employeeRows.map(item => item.name), productCategories: productCategoryRows.map(item => item.name), serviceCategories: serviceCategoryRows.map(item => item.name), postCategories: postCategoryRows.map(item => item.name) } }
+  return { data: { services: serviceRows.map(item => item.name), employees: employeeRows.map(item => item.name), productCategories: productCategoryRows.map(item => item.name), serviceCategories: serviceCategoryRows.map(item => item.name), postCategories: [...new Set(['Chăm sóc sức khỏe', ...postCategoryRows.map(item => item.name)])] } }
 })

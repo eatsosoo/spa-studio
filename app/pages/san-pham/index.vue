@@ -8,7 +8,17 @@ const { data: response, pending, error, refresh } = await useAsyncData('store-pr
 const products = computed(() => response.value?.data ?? [])
 const categories = computed(() => ['Tất cả', ...new Set(products.value.map(product => product.category))])
 const activeCategory = ref('Tất cả')
-const visibleProducts = computed(() => activeCategory.value === 'Tất cả' ? products.value : products.value.filter(product => product.category === activeCategory.value))
+const search = ref('')
+const sort = ref('name')
+const inStock = ref(false)
+const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd')
+const visibleProducts = computed(() => products.value.filter(product =>
+  (activeCategory.value === 'Tất cả' || product.category === activeCategory.value)
+  && (!inStock.value || product.stock > 0)
+  && normalize(product.name + ' ' + product.shortDescription + ' ' + product.category).includes(normalize(search.value.trim()))
+).sort((a, b) => sort.value === 'price-asc' ? a.price - b.price : sort.value === 'price-desc' ? b.price - a.price : a.name.localeCompare(b.name, 'vi')))
+function resetFilters() { search.value = ''; sort.value = 'name'; inStock.value = false; activeCategory.value = 'Tất cả' }
+useStoreSeo('Sản phẩm chăm sóc da và cơ thể | MIÊN Spa', 'Tìm sản phẩm chăm sóc da, xem thành phần, hướng dẫn sử dụng và giá. Chọn sản phẩm phù hợp và đặt hàng trực tiếp tại MIÊN Spa.', '/san-pham')
 </script>
 
 <template>
@@ -19,7 +29,7 @@ const visibleProducts = computed(() => activeCategory.value === 'Tất cả' ? p
         <div class="mx-auto grid max-w-[1400px] gap-12 border-b border-[#78816f]/25 pb-16 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
           <p class="section-label">Nghi thức tại nhà</p>
           <div>
-            <h1 class="max-w-[900px] font-display text-[clamp(3.5rem,7vw,7.4rem)] font-light leading-[0.88] tracking-[-0.055em]">
+            <h1 class="max-w-[900px] font-display text-[clamp(2.7rem,5vw,5rem)] font-light leading-[0.88] tracking-[-0.055em]">
               Chăm sóc tiếp,<br><span class="italic text-[#66715d]">sau khi rời MIÊN.</span>
             </h1>
             <p class="mt-9 max-w-[55ch] text-sm leading-7 text-[#62695f]">Những công thức dịu, ít mùi hương và vừa đủ để bạn giữ lại cảm giác thư thái trong những ngày ở nhà.</p>
@@ -29,8 +39,14 @@ const visibleProducts = computed(() => activeCategory.value === 'Tất cả' ? p
 
       <section class="px-5 pb-28 md:px-10 md:pb-36 lg:px-14">
         <div class="mx-auto max-w-[1400px]">
+          <div class="mb-6 grid gap-5 md:grid-cols-[1fr_220px_auto] md:items-end">
+            <label class="field-block">Tìm sản phẩm<input v-model="search" type="search" placeholder="Tên sản phẩm, nhu cầu chăm sóc…"></label>
+            <label class="field-block">Sắp xếp<select v-model="sort"><option value="name">Tên A–Z</option><option value="price-asc">Giá thấp đến cao</option><option value="price-desc">Giá cao đến thấp</option></select></label>
+            <label class="flex min-h-12 items-center gap-3 text-sm"><input v-model="inStock" type="checkbox" class="size-4 accent-[#4c5d43]">Chỉ hiện còn hàng</label>
+          </div>
+          <p class="mb-5 text-xs text-[#62695f]" role="status">{{ visibleProducts.length }} sản phẩm phù hợp</p>
           <div class="mb-12 flex max-w-full gap-2 overflow-x-auto border-b border-[#78816f]/20 pb-5">
-            <button v-for="category in categories" :key="category" type="button" class="store-filter" :class="activeCategory === category ? 'store-filter--active' : ''" @click="activeCategory = category">{{ category }}</button>
+            <button v-for="category in categories" :key="category" type="button" class="store-filter" :class="activeCategory === category ? 'store-filter--active' : ''" :aria-pressed="activeCategory === category" @click="activeCategory = category">{{ category }}</button>
           </div>
 
           <div v-if="pending" class="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label="Đang tải sản phẩm">
@@ -40,7 +56,7 @@ const visibleProducts = computed(() => activeCategory.value === 'Tất cả' ? p
           <TransitionGroup v-else-if="visibleProducts.length" name="product-list" tag="div" class="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <ProductCard v-for="(product, index) in visibleProducts" :key="product.id" :product="product" :index="index" />
           </TransitionGroup>
-          <p v-else class="border-y border-[#78816f]/20 py-12 text-center text-sm text-[#6c7368]">Chưa có sản phẩm trong nhóm này.</p>
+          <p v-else class="border-y border-[#78816f]/20 py-12 text-center text-sm text-[#6c7368]">Không tìm thấy sản phẩm phù hợp. <button type="button" class="text-link ml-3" @click="resetFilters">Xóa bộ lọc</button></p>
         </div>
       </section>
 

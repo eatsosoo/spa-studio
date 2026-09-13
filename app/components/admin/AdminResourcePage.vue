@@ -2,7 +2,7 @@
 import type { AdminRow, PaginatedResponse, PaginationMeta } from '~/types'
 import type { AdminResourceConfig } from '~/data/admin'
 
-const props = defineProps<{ config: AdminResourceConfig }>()
+const props = defineProps<{ config: AdminResourceConfig; health?: boolean }>()
 const route = useRoute()
 const router = useRouter()
 const isPosts = computed(() => props.config.resource === 'posts')
@@ -33,12 +33,13 @@ watch(search, (value) => {
 onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer) })
 
 const { data: response, pending, error, refresh } = await useAsyncData(
-  `admin-${props.config.resource}`,
+  `admin-${props.config.resource}-${props.health ? "health" : "all"}`,
   () => $fetch<PaginatedResponse<AdminRow>>(`/api/admin/${props.config.resource}`, {
     query: {
       page: page.value,
       pageSize: pageSize.value,
       search: debouncedSearch.value || undefined,
+      category: props.health ? 'Chăm sóc sức khỏe' : undefined,
       filterField: activeFilterConfig.value?.field || undefined,
       filterValue: activeFilterConfig.value?.value || undefined,
     },
@@ -85,7 +86,7 @@ function errorMessage(value: unknown) {
 
 function openCreate() {
   if (isPosts.value) {
-    router.push('/admin/bai-viet/moi')
+    router.push(props.health ? '/admin/bai-viet/moi?category=health' : '/admin/bai-viet/moi')
     return
   }
   editingRow.value = null

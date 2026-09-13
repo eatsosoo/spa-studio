@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useSeoMeta({ robots: 'noindex, nofollow' })
 import type { CartProduct } from '~/types'
 import { formatPrice } from '~/utils/currency'
 
@@ -51,6 +52,7 @@ onMounted(() => { hydrate(); void syncCart() })
   <div class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
     <SiteHeader compact />
     <main class="px-5 pb-28 pt-12 md:px-10 md:pt-20 lg:px-14">
+      <CheckoutSteps :current="1" />
       <div class="mx-auto max-w-[1400px]">
         <div class="border-b border-[#78816f]/25 pb-10"><p class="section-label">Cửa hàng MIÊN</p><h1 class="mt-4 font-display text-5xl font-light tracking-[-0.045em] md:text-7xl">Giỏ hàng của bạn.</h1><p class="mt-5 max-w-xl text-sm leading-7 text-[#687064]">Sản phẩm trong giỏ chưa được giữ kho. MIÊN sẽ kiểm tra lại số lượng ngay trước khi đặt hàng.</p></div>
 

@@ -50,6 +50,13 @@
       "when": 1789053555217,
       "tag": "0006_productive_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1789316109046,
+      "tag": "0007_gray_quasimodo",
+      "breakpoints": true
     }
   ]
 }

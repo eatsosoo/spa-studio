@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useStoreSeo('MIÊN Spa | Chăm sóc cơ thể, làn da và khoảng nghỉ của bạn', 'Khám phá liệu trình tại MIÊN Spa, sản phẩm chăm sóc tại nhà và kinh nghiệm chăm sóc sức khỏe. Đặt lịch tư vấn hoặc mua hàng trực tiếp.', '/')
 type BookingResponse = {
   ok: boolean
   reference: string
