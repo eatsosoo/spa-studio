@@ -4,9 +4,11 @@ defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<{
   modelValue?: string | number | null
   modelModifiers?: { trim?: boolean; number?: boolean }
+  showOutline?: boolean
 }>(), {
   modelValue: undefined,
   modelModifiers: () => ({}),
+  showOutline: true,
 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string | number] }>()
@@ -29,5 +31,11 @@ defineExpose({ element, focus })
 </script>
 
 <template>
-  <textarea ref="element" v-bind="$attrs" :value="effectiveValue ?? ''" @input="update" />
+  <textarea
+    ref="element"
+    v-bind="$attrs"
+    :value="effectiveValue ?? ''"
+    :style="showOutline ? undefined : { outline: 'none' }"
+    @input="update"
+  />
 </template>

@@ -445,6 +445,7 @@ useHead({
               rows="2"
               class="w-full resize-none border-0 bg-transparent text-3xl font-semibold leading-tight tracking-[-0.045em] text-[#2f382c] outline-none placeholder:text-[#a6aa9f] md:text-5xl"
               placeholder="Tiêu đề bài viết"
+              :show-outline="false"
             />
           </label>
           <label class="admin-field mt-5" data-seo-field="summary"
@@ -500,7 +501,9 @@ useHead({
                   <small v-if="postId" class="font-normal text-[#858a81]"
                     >được khóa sau lần xuất bản đầu</small
                   ></span
-                ><CommonInput v-model="form.slug" placeholder="duong-dan-bai-viet"
+                ><CommonInput
+                  v-model="form.slug"
+                  placeholder="duong-dan-bai-viet"
               /></label>
             </div>
           </div>
