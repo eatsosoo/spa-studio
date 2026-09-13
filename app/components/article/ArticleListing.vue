@@ -68,7 +68,7 @@ function formatDate(value: string | null) {
         </div>
       </section>
 
-      <form class="mx-auto mb-12 grid max-w-[1400px] gap-4 px-5 sm:grid-cols-[1fr_auto] sm:items-end md:px-10" @submit.prevent="searchPosts"><label class="field-block">Tìm bài viết<input v-model="search" type="search" placeholder="Nhập chủ đề bạn muốn đọc"></label><button class="button-primary justify-center" type="submit">Tìm bài viết</button></form>
+      <form class="mx-auto mb-12 grid max-w-[1400px] gap-4 px-5 sm:grid-cols-[1fr_auto] sm:items-end md:px-10" @submit.prevent="searchPosts"><label class="field-block">Tìm bài viết<CommonInput v-model="search" type="search" placeholder="Nhập chủ đề bạn muốn đọc" /></label><button class="button-primary justify-center" type="submit">Tìm bài viết</button></form>
       <section ref="listing" class="scroll-mt-6 px-5 pb-24 md:px-10 md:pb-32 lg:px-14">
         <div v-if="pending" class="mx-auto grid max-w-[1400px] animate-pulse gap-10 lg:grid-cols-[1.15fr_0.85fr]"><div class="aspect-[16/11] bg-[#e3ded2]" /><div class="space-y-5 py-8"><div class="h-3 w-28 bg-[#ddd8cc]" /><div class="h-28 bg-[#ddd8cc]" /><div class="h-16 bg-[#ddd8cc]" /></div></div>
 

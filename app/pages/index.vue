@@ -340,36 +340,36 @@ onBeforeUnmount(() => {
               <div class="mt-10 grid gap-6">
                 <label class="field-block">
                   <span>Họ và tên</span>
-                  <input v-model="form.name" type="text" autocomplete="name" placeholder="Tên của bạn" :aria-invalid="Boolean(errors.name)">
+                  <CommonInput v-model="form.name" type="text" autocomplete="name" placeholder="Tên của bạn" :aria-invalid="Boolean(errors.name)" />
                   <small v-if="errors.name" class="field-error">{{ errors.name }}</small>
                 </label>
 
                 <label class="field-block">
                   <span>Số điện thoại</span>
-                  <input v-model="form.phone" type="tel" autocomplete="tel" placeholder="090 123 4567" :aria-invalid="Boolean(errors.phone)">
+                  <CommonInput v-model="form.phone" type="tel" autocomplete="tel" placeholder="090 123 4567" :aria-invalid="Boolean(errors.phone)" />
                   <small v-if="errors.phone" class="field-error">{{ errors.phone }}</small>
                 </label>
 
                 <div class="grid gap-6 sm:grid-cols-2">
                   <label class="field-block">
                     <span>Liệu trình</span>
-                    <select v-model="form.service" :aria-invalid="Boolean(errors.service)">
+                    <CommonSelect v-model="form.service" :aria-invalid="Boolean(errors.service)">
                       <option value="" disabled>Chọn liệu trình</option>
                       <option v-for="service in services" :key="service.number" :value="service.name">{{ service.name }}</option>
-                    </select>
+                    </CommonSelect>
                     <small v-if="errors.service" class="field-error">{{ errors.service }}</small>
                   </label>
 
                   <label class="field-block">
                     <span>Ngày bạn muốn ghé</span>
-                    <input v-model="form.date" type="date" :min="today" :aria-invalid="Boolean(errors.date)">
+                    <CommonDatePicker v-model="form.date" :min="today" placeholder="Chọn ngày bạn muốn ghé" :aria-invalid="Boolean(errors.date)" />
                     <small v-if="errors.date" class="field-error">{{ errors.date }}</small>
                   </label>
                 </div>
 
                 <label class="field-block">
                   <span>Lời nhắn <i>không bắt buộc</i></span>
-                  <textarea v-model="form.note" rows="3" placeholder="Chia sẻ điều bạn muốn MIÊN lưu ý" />
+                  <CommonTextarea v-model="form.note" rows="3" placeholder="Chia sẻ điều bạn muốn MIÊN lưu ý" />
                 </label>
               </div>
 

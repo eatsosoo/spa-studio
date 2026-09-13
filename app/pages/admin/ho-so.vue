@@ -61,19 +61,19 @@ async function updatePassword() {
       <form class="grid content-start gap-5" novalidate @submit.prevent="updateProfile">
         <div class="border-b border-[#78816f]/20 pb-5"><p class="text-[0.62rem] font-semibold uppercase tracking-[0.17em] text-[#7b8375]">Thông tin cá nhân</p><h2 class="mt-2 text-xl font-semibold tracking-[-0.03em]">Thông tin hiển thị</h2></div>
         <div v-if="infoError || infoSuccess" class="rounded-sm border px-4 py-3 text-xs" :class="infoError ? 'border-[#a96e64]/30 bg-[#f0dfda] text-[#78473f]' : 'border-[#76906c]/30 bg-[#e2eadf] text-[#45603e]'">{{ infoError || infoSuccess }}</div>
-        <label class="admin-field"><span>Họ và tên</span><input v-model="info.fullName" autocomplete="name" placeholder="Họ và tên"></label>
-        <label class="admin-field"><span>Email</span><input v-model="info.email" type="email" autocomplete="email" placeholder="ten@mien.vn"></label>
-        <label class="admin-field"><span>Số điện thoại</span><input v-model="info.phone" type="tel" autocomplete="tel" placeholder="090 000 0000"></label>
-        <label class="admin-field"><span>Tên đăng nhập</span><input :value="user?.username" disabled class="disabled:cursor-not-allowed disabled:opacity-60"><small>Tên đăng nhập không thể thay đổi trong hồ sơ.</small></label>
+        <label class="admin-field"><span>Họ và tên</span><CommonInput v-model="info.fullName" autocomplete="name" placeholder="Họ và tên" /></label>
+        <label class="admin-field"><span>Email</span><CommonInput v-model="info.email" type="email" autocomplete="email" placeholder="ten@mien.vn" /></label>
+        <label class="admin-field"><span>Số điện thoại</span><CommonInput v-model="info.phone" type="tel" autocomplete="tel" placeholder="090 000 0000" /></label>
+        <label class="admin-field"><span>Tên đăng nhập</span><CommonInput :value="user?.username" disabled class="disabled:cursor-not-allowed disabled:opacity-60" /><small>Tên đăng nhập không thể thay đổi trong hồ sơ.</small></label>
         <div class="mt-2 flex justify-end border-t border-[#78816f]/20 pt-6"><AppButton :label="infoPending ? 'Đang lưu…' : 'Lưu hồ sơ'" type="submit" icon="check" :disabled="infoPending" /></div>
       </form>
 
       <form class="grid content-start gap-5 lg:border-l lg:border-[#78816f]/20 lg:pl-12" novalidate @submit.prevent="updatePassword">
         <div class="border-b border-[#78816f]/20 pb-5"><p class="text-[0.62rem] font-semibold uppercase tracking-[0.17em] text-[#7b8375]">Bảo mật</p><h2 class="mt-2 text-xl font-semibold tracking-[-0.03em]">Đổi mật khẩu</h2></div>
         <div v-if="passwordError || passwordSuccess" class="rounded-sm border px-4 py-3 text-xs" :class="passwordError ? 'border-[#a96e64]/30 bg-[#f0dfda] text-[#78473f]' : 'border-[#76906c]/30 bg-[#e2eadf] text-[#45603e]'">{{ passwordError || passwordSuccess }}</div>
-        <label class="admin-field"><span>Mật khẩu hiện tại</span><input v-model="security.currentPassword" type="password" autocomplete="current-password"></label>
-        <label class="admin-field"><span>Mật khẩu mới</span><input v-model="security.newPassword" type="password" autocomplete="new-password"><small>Tối thiểu 8 ký tự.</small></label>
-        <label class="admin-field"><span>Xác nhận mật khẩu mới</span><input v-model="security.confirmPassword" type="password" autocomplete="new-password"></label>
+        <label class="admin-field"><span>Mật khẩu hiện tại</span><CommonInput v-model="security.currentPassword" type="password" autocomplete="current-password" /></label>
+        <label class="admin-field"><span>Mật khẩu mới</span><CommonInput v-model="security.newPassword" type="password" autocomplete="new-password" /><small>Tối thiểu 8 ký tự.</small></label>
+        <label class="admin-field"><span>Xác nhận mật khẩu mới</span><CommonInput v-model="security.confirmPassword" type="password" autocomplete="new-password" /></label>
         <div class="mt-2 flex justify-end border-t border-[#78816f]/20 pt-6"><AppButton :label="passwordPending ? 'Đang cập nhật…' : 'Đổi mật khẩu'" type="submit" icon="lock" :disabled="passwordPending" /></div>
       </form>
     </div>

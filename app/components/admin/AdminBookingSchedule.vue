@@ -241,7 +241,7 @@ function bookingVisual(status: string) {
     <div class="mt-6 grid gap-4 xl:grid-cols-[auto_1fr_auto] xl:items-center">
       <div class="flex items-center gap-2">
         <button type="button" class="grid size-10 place-items-center rounded-full border border-[#78816f]/25 text-[#566150] transition hover:bg-[#e7e3d8] active:scale-95" aria-label="Ngày trước" @click="shiftDate(-1)"><AppIcon name="chevron" :size="15" class="rotate-180" /></button>
-        <div class="w-[190px]"><AdminDatePicker v-model="selectedDate" aria-label="Ngày xem lịch" /></div>
+        <div class="w-[190px]"><CommonDatePicker v-model="selectedDate" aria-label="Ngày xem lịch" /></div>
         <button type="button" class="grid size-10 place-items-center rounded-full border border-[#78816f]/25 text-[#566150] transition hover:bg-[#e7e3d8] active:scale-95" aria-label="Ngày sau" @click="shiftDate(1)"><AppIcon name="chevron" :size="15" /></button>
         <button v-if="selectedDate !== todayKey" type="button" class="rounded-full px-3 py-2 text-[0.68rem] font-semibold text-[#5b6955] transition hover:bg-[#e7e3d8]" @click="selectedDate = todayKey">Hôm nay</button>
       </div>
@@ -264,7 +264,7 @@ function bookingVisual(status: string) {
       </div>
       <div class="flex items-center gap-3">
         <span v-if="conflicts" class="rounded-full bg-[#efe0da] px-3 py-1.5 text-[0.64rem] font-semibold text-[#80564d]">{{ conflicts }} lịch đang giao nhau</span>
-        <label class="admin-search"><AppIcon name="search" :size="16" /><input v-model="search" type="search" placeholder="Tìm khách, dịch vụ, nhân viên"></label>
+        <label class="admin-search"><AppIcon name="search" :size="16" /><CommonInput v-model="search" type="search" placeholder="Tìm khách, dịch vụ, nhân viên" /></label>
       </div>
     </div>
 

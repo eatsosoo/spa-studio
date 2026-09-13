@@ -166,7 +166,7 @@ async function save() {
       <aside class="border-r-0 border-[#78816f]/20 lg:border-r lg:pr-7">
         <label class="admin-field"
           ><span>Tìm dịch vụ</span
-          ><input v-model="search" placeholder="Tên hoặc mã dịch vụ"
+          ><CommonInput v-model="search" placeholder="Tên hoặc mã dịch vụ"
         /></label>
         <div v-if="pending" class="mt-5 grid gap-2">
           <span
@@ -255,7 +255,7 @@ async function save() {
           >
             <label class="admin-field"
               ><span>Sản phẩm</span
-              ><select v-model.number="item.productId">
+              ><CommonSelect v-model.number="item.productId">
                 <option :value="0" disabled>Chọn vật tư</option>
                 <option
                   v-for="product in products"
@@ -270,11 +270,11 @@ async function save() {
                 >
                   {{ product.name }} · {{ product.sku }}
                 </option>
-              </select></label
+              </CommonSelect></label
             >
             <label class="admin-field"
               ><span>Lượng / lần</span
-              ><input
+              ><CommonInput
                 v-model.number="item.quantity"
                 type="number"
                 min="0.001"
@@ -282,7 +282,7 @@ async function save() {
             /></label>
             <label class="admin-field"
               ><span>Ghi chú</span
-              ><input
+              ><CommonInput
                 v-model="item.note"
                 placeholder="Ví dụ: dùng cho vùng mặt"
             /></label>

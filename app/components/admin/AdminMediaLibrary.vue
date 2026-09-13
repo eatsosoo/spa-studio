@@ -131,9 +131,9 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
             </aside>
             <div class="flex min-h-0 flex-col">
               <div class="flex flex-wrap gap-2 border-b border-[#78816f]/20 p-4 md:px-6">
-                <label class="relative min-w-[220px] flex-1"><span class="sr-only">Tìm ảnh</span><AppIcon name="search" :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-[#7d8578]" /><input v-model="search" class="admin-control w-full pl-9" placeholder="Tìm theo tên ảnh"></label>
+                <label class="relative min-w-[220px] flex-1"><span class="sr-only">Tìm ảnh</span><AppIcon name="search" :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-[#7d8578]" /><CommonInput v-model="search" class="admin-control w-full pl-9" placeholder="Tìm theo tên ảnh" /></label>
                 <button type="button" class="app-action app-action--secondary" :disabled="uploading" @click="uploadInput?.click()"><AppIcon name="image" :size="15" />{{ uploading ? 'Đang tối ưu…' : 'Tải ảnh lên' }}</button>
-                <input ref="uploadInput" class="sr-only" type="file" multiple accept="image/jpeg,image/png,image/webp" @change="upload">
+                <CommonInput ref="uploadInput" class="sr-only" type="file" multiple accept="image/jpeg,image/png,image/webp" @change="upload" />
               </div>
               <p v-if="errorMessage" class="mx-4 mt-4 bg-[#f1e4df] px-4 py-3 text-xs text-[#75483f]" role="alert">{{ errorMessage }}</p>
               <p v-if="successMessage" class="mx-4 mt-4 bg-[#e4eadf] px-4 py-3 text-xs text-[#526049]" role="status">{{ successMessage }}</p>

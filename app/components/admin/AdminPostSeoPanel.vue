@@ -67,7 +67,7 @@ onBeforeUnmount(() => clearTimeout(timer));
     <div class="mt-4 grid gap-3">
       <label class="admin-field" data-seo-field="focusKeyword"
         ><span>Từ khóa chính</span
-        ><input
+        ><CommonInput
           :value="modelValue.focusKeyword"
           placeholder="Ví dụ: chăm sóc da nhạy cảm"
           @input="
@@ -83,7 +83,7 @@ onBeforeUnmount(() => clearTimeout(timer));
           <small class="font-normal text-[#858a81]"
             >phân cách bằng dấu phẩy</small
           ></span
-        ><input
+        ><CommonInput
           :value="secondaryKeywords"
           placeholder="phục hồi da, spa cho da nhạy cảm"
           @input="

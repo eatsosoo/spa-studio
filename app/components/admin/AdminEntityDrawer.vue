@@ -73,20 +73,20 @@ function submit() {
             <div v-if="apiError" class="rounded-sm border border-[#aa746c]/30 bg-[#f2e4df] px-4 py-3 text-xs leading-5 text-[#7d443c]" role="alert">{{ apiError }}</div>
             <div v-for="(field, index) in fields" :key="field.key" class="admin-field">
               <label :for="`admin-field-${field.key}`">{{ field.label }}</label>
-              <select v-if="field.type === 'select'" :id="`admin-field-${field.key}`" :ref="(element) => { if (index === 0) firstField = element as HTMLSelectElement }" v-model="form[field.key]" :aria-invalid="Boolean(errors[field.key])">
+              <CommonSelect v-if="field.type === 'select'" :id="`admin-field-${field.key}`" :ref="(element) => { if (index === 0) firstField = element as HTMLSelectElement }" v-model="form[field.key]" :aria-invalid="Boolean(errors[field.key])">
                 <option value="" disabled>Chọn {{ field.label.toLowerCase() }}</option>
                 <option v-for="option in field.options" :key="option" :value="option">{{ option }}</option>
-              </select>
-              <textarea v-else-if="field.type === 'textarea'" :id="`admin-field-${field.key}`" :ref="(element) => { if (index === 0) firstField = element as HTMLTextAreaElement }" v-model="form[field.key]" rows="4" :placeholder="field.placeholder" :aria-invalid="Boolean(errors[field.key])" />
+              </CommonSelect>
+              <CommonTextarea v-else-if="field.type === 'textarea'" :id="`admin-field-${field.key}`" :ref="(element) => { if (index === 0) firstField = element as HTMLTextAreaElement }" v-model="form[field.key]" rows="4" :placeholder="field.placeholder" :aria-invalid="Boolean(errors[field.key])" />
               <div v-else-if="field.type === 'image'" class="grid gap-3">
                 <div class="grid aspect-[16/9] place-items-center overflow-hidden rounded-sm border border-[#78816f]/20 bg-[#ebe7dd] text-[#788170]">
                   <img v-if="form[field.key] && !imageFailures[field.key]" :src="String(form[field.key])" alt="Xem trước hình ảnh sản phẩm" class="h-full w-full object-cover" @load="imageFailures[field.key] = false" @error="imageFailures[field.key] = true">
                   <span v-else class="flex items-center gap-2 text-[0.68rem] font-medium"><AppIcon name="image" :size="18" />{{ form[field.key] ? 'Không tải được ảnh' : 'Ảnh xem trước' }}</span>
                 </div>
-                <input :id="`admin-field-${field.key}`" v-model="form[field.key]" type="url" :placeholder="field.placeholder" :aria-invalid="Boolean(errors[field.key])" @input="imageFailures[field.key] = false">
+                <CommonInput :id="`admin-field-${field.key}`" v-model="form[field.key]" type="url" :placeholder="field.placeholder" :aria-invalid="Boolean(errors[field.key])" @input="imageFailures[field.key] = false" />
               </div>
-              <AdminDatePicker v-else-if="field.type === 'date'" :id="`admin-field-${field.key}`" v-model="form[field.key]" :placeholder="field.placeholder ?? `Chọn ${field.label.toLowerCase()}`" :invalid="Boolean(errors[field.key])" :disabled="saving" />
-              <input v-else :id="`admin-field-${field.key}`" :ref="(element) => { if (index === 0) firstField = element as HTMLInputElement }" v-model="form[field.key]" :type="field.type ?? 'text'" :min="field.type === 'number' ? 0 : undefined" :step="field.type === 'number' ? 1 : undefined" :placeholder="field.placeholder" :aria-invalid="Boolean(errors[field.key])">
+              <CommonDatePicker v-else-if="field.type === 'date'" :id="`admin-field-${field.key}`" v-model="form[field.key]" :placeholder="field.placeholder ?? `Chọn ${field.label.toLowerCase()}`" :invalid="Boolean(errors[field.key])" :disabled="saving" />
+              <CommonInput v-else :id="`admin-field-${field.key}`" :ref="(element) => { if (index === 0) firstField = element as HTMLInputElement }" v-model="form[field.key]" :type="field.type ?? 'text'" :min="field.type === 'number' ? 0 : undefined" :step="field.type === 'number' ? 1 : undefined" :placeholder="field.placeholder" :aria-invalid="Boolean(errors[field.key])" />
               <small v-if="field.helper" class="text-[#7d8379]">{{ field.helper }}</small>
               <small v-if="errors[field.key]" class="text-[#8b5148]">{{ errors[field.key] }}</small>
             </div>

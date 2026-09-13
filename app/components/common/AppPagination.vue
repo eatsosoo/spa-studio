@@ -31,9 +31,9 @@ function changePageSize(event: Event) {
       <span>Hiển thị <strong class="font-semibold tabular-nums text-[#455140]">{{ meta.from }}–{{ meta.to }}</strong> trong {{ meta.total }}</span>
       <label class="flex items-center gap-2">
         <span>Mỗi trang</span>
-        <select :value="meta.pageSize" class="rounded-full border border-[#78816f]/25 bg-[#f8f5ed] px-2.5 py-1.5 text-[0.68rem] text-[#455140] outline-none transition focus:border-[#61705a]" aria-label="Số dòng mỗi trang" @change="changePageSize">
+        <CommonSelect :value="meta.pageSize" class="rounded-full border border-[#78816f]/25 bg-[#f8f5ed] px-2.5 py-1.5 text-[0.68rem] text-[#455140] outline-none transition focus:border-[#61705a]" aria-label="Số dòng mỗi trang" @change="changePageSize">
           <option v-for="size in sizes" :key="size" :value="size">{{ size }}</option>
-        </select>
+        </CommonSelect>
       </label>
     </div>
 

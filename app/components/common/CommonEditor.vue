@@ -5,7 +5,7 @@ import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { ProductBlock } from '~/extensions/ProductBlock'
-import AdminProductNodeView from './AdminProductNodeView.vue'
+import AdminProductNodeView from '~/components/admin/AdminProductNodeView.vue'
 
 const props = defineProps<{ modelValue: string; postId?: number; category?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -122,7 +122,7 @@ onBeforeUnmount(() => { clearTimeout(searchTimer); editor.destroy() })
       <div v-if="pickerMode" class="fixed inset-0 z-40 grid place-items-center bg-[#273025]/45 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" @click.self="pickerMode = null">
         <section class="w-full max-w-xl bg-[#f8f4eb] shadow-[0_24px_70px_rgba(41,49,38,0.2)]">
           <header class="flex items-center justify-between border-b border-[#78816f]/20 px-5 py-4"><div><p class="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#75806f]">{{ pickerMode === 'product' ? 'Block nội dung' : 'URL tương đối' }}</p><h2 class="mt-1 text-lg font-semibold text-[#30382c]">{{ pickerMode === 'product' ? 'Chèn sản phẩm' : 'Chèn liên kết nội bộ' }}</h2></div><button type="button" class="editor-tool" @click="pickerMode = null"><AppIcon name="close" :size="16" /></button></header>
-          <div class="p-5"><label class="admin-field"><span>Tìm theo tên</span><input v-model="pickerSearch" autofocus :placeholder="pickerMode === 'product' ? 'Tên sản phẩm…' : 'Bài viết, sản phẩm, dịch vụ hoặc trang…'"></label>
+          <div class="p-5"><label class="admin-field"><span>Tìm theo tên</span><CommonInput v-model="pickerSearch" autofocus :placeholder="pickerMode === 'product' ? 'Tên sản phẩm…' : 'Bài viết, sản phẩm, dịch vụ hoặc trang…'" /></label>
             <div class="mt-4 max-h-[420px] overflow-y-auto border-y border-[#78816f]/20">
               <div v-if="pickerLoading" class="space-y-2 py-3"><div v-for="index in 4" :key="index" class="h-14 animate-pulse bg-[#e8e3d8]" /></div>
               <p v-else-if="!pickerResults.length" class="py-12 text-center text-xs text-[#7a8275]">Không tìm thấy kết quả phù hợp.</p>

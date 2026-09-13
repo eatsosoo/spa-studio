@@ -1,19 +1,26 @@
 <script setup lang="ts">
+defineOptions({ inheritAttrs: false })
+
 const props = withDefaults(defineProps<{
   id?: string
   modelValue?: string | number
   placeholder?: string
   invalid?: boolean
   disabled?: boolean
+  min?: string
+  max?: string
 }>(), {
   id: undefined,
   modelValue: '',
   placeholder: 'Chọn ngày',
   invalid: false,
   disabled: false,
+  min: undefined,
+  max: undefined,
 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const attrs = useAttrs()
 const root = ref<HTMLElement | null>(null)
 const open = ref(false)
 const panel = ref<'days' | 'months' | 'years'>('days')
@@ -38,6 +45,8 @@ const yearPageStart = ref(Math.floor(initialDate.getFullYear() / 12) * 12)
 const months = Array.from({ length: 12 }, (_, index) => ({ value: index, label: `Tháng ${index + 1}` }))
 
 const selectedDate = computed(() => parseDate(props.modelValue))
+const isInvalid = computed(() => props.invalid || attrs['aria-invalid'] === true || attrs['aria-invalid'] === 'true')
+const todayDisabled = computed(() => Boolean((props.min && todayKey < props.min) || (props.max && todayKey > props.max)))
 const displayValue = computed(() => selectedDate.value
   ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: 'long', year: 'numeric' }).format(selectedDate.value)
   : '')
@@ -49,7 +58,13 @@ const calendarDays = computed(() => {
   return Array.from({ length: 42 }, (_, index) => {
     const date = new Date(start)
     date.setDate(start.getDate() + index)
-    return { key: dateKey(date), label: date.getDate(), currentMonth: date.getMonth() === viewMonth.value }
+    const key = dateKey(date)
+    return {
+      key,
+      label: date.getDate(),
+      currentMonth: date.getMonth() === viewMonth.value,
+      disabled: Boolean((props.min && key < props.min) || (props.max && key > props.max)),
+    }
   })
 })
 
@@ -118,11 +133,13 @@ function toggle() {
 }
 
 function selectDate(value: string) {
+  if ((props.min && value < props.min) || (props.max && value > props.max)) return
   emit('update:modelValue', value)
   open.value = false
 }
 
 function chooseToday() {
+  if (todayDisabled.value) return
   emit('update:modelValue', todayKey)
   open.value = false
 }
@@ -144,11 +161,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handleDocument
   <div ref="root" class="relative font-normal" @keydown.esc="open = false">
     <button
       :id="id"
+      v-bind="$attrs"
       type="button"
       class="flex min-h-[43px] w-full items-center justify-between gap-3 rounded-[0.3rem] border bg-[rgba(255,253,248,0.68)] px-[0.9rem] py-[0.82rem] text-left text-[0.77rem] text-[#34402f] outline-none transition-[border-color,background-color,transform] duration-200 ease-out hover:bg-[#fffcf6] focus:border-[#607059] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
-      :class="invalid ? 'border-[#955e54]' : open ? 'border-[#607059] bg-[#fffcf6]' : 'border-[rgba(88,101,80,0.28)]'"
+      :class="isInvalid ? 'border-[#955e54]' : open ? 'border-[#607059] bg-[#fffcf6]' : 'border-[rgba(88,101,80,0.28)]'"
       :aria-expanded="open"
-      :aria-invalid="invalid"
+      :aria-invalid="isInvalid"
       aria-haspopup="dialog"
       :disabled="disabled"
       @click="toggle"
@@ -197,11 +215,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handleDocument
                   class="relative grid aspect-square place-items-center rounded-full text-[0.69rem] transition duration-200 ease-out hover:-translate-y-px hover:bg-[#e6e9e0] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#687763] active:scale-95"
                   :class="[
                     day.key === String(modelValue) ? 'bg-[#52634b] font-semibold text-[#fbf8f0] hover:bg-[#52634b]' : '',
-                    day.currentMonth ? 'text-[#394434]' : 'text-[#a9ada5]',
+                    day.disabled ? 'cursor-not-allowed text-[#c0c3bc] opacity-45 hover:translate-y-0 hover:bg-transparent' : day.currentMonth ? 'text-[#394434]' : 'text-[#a9ada5]',
                   ]"
                   :aria-label="day.key"
                   :aria-selected="day.key === String(modelValue)"
                   :aria-current="day.key === todayKey ? 'date' : undefined"
+                  :disabled="day.disabled"
                   :data-date="day.key"
                   :data-current-month="day.currentMonth"
                   role="gridcell"
@@ -243,7 +262,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handleDocument
 
         <div class="mt-4 flex items-center justify-between border-t border-[#78816f]/15 pt-3">
           <button type="button" class="text-[0.64rem] font-medium text-[#7b8276] transition hover:text-[#4e5a48] active:translate-y-px" @click="clearDate">Xóa ngày</button>
-          <button type="button" class="rounded-full bg-[#e3e8de] px-3 py-1.5 text-[0.64rem] font-semibold text-[#4c5b46] transition hover:bg-[#d8e0d3] active:scale-95" @click="chooseToday">Hôm nay</button>
+          <button type="button" class="rounded-full bg-[#e3e8de] px-3 py-1.5 text-[0.64rem] font-semibold text-[#4c5b46] transition hover:bg-[#d8e0d3] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" :disabled="todayDisabled" @click="chooseToday">Hôm nay</button>
         </div>
       </div>
     </Transition>

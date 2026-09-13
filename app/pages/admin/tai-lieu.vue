@@ -127,7 +127,7 @@ function tabTo(value: DocView) {
       <div class="relative">
         <label for="documentation-search" class="mb-2 block text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#70796b]">Tìm trong toàn bộ tài liệu</label>
         <AppIcon name="search" :size="17" class="pointer-events-none absolute bottom-3.5 left-4 text-[#7b8475]" />
-        <input id="documentation-search" v-model="searchQuery" type="search" class="h-11 w-full border border-[#78816f]/25 bg-[#f9f7f1] pl-11 pr-11 text-xs text-[#30382d] outline-none transition focus:border-[#5c6d55] focus:bg-white" placeholder="Tên bảng, endpoint hoặc chức năng…">
+        <CommonInput id="documentation-search" v-model="searchQuery" type="search" class="h-11 w-full border border-[#78816f]/25 bg-[#f9f7f1] pl-11 pr-11 text-xs text-[#30382d] outline-none transition focus:border-[#5c6d55] focus:bg-white" placeholder="Tên bảng, endpoint hoặc chức năng…" />
         <button v-if="searchQuery" type="button" class="absolute bottom-1.5 right-2 grid size-8 place-items-center text-[#788076] transition hover:text-[#35402f] active:scale-[0.96]" aria-label="Xóa tìm kiếm" @click="searchQuery = ''"><AppIcon name="close" :size="15" /></button>
       </div>
     </header>

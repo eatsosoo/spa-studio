@@ -133,7 +133,7 @@ async function submit() {
               ><AppIcon
                 name="mail"
                 :size="17"
-                class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#778170]" /><input
+                class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#778170]" /><CommonInput
                 v-model="form.identifier"
                 class="!py-3.5 !pl-11"
                 autocomplete="username"
@@ -150,7 +150,7 @@ async function submit() {
               ><AppIcon
                 name="lock"
                 :size="17"
-                class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#778170]" /><input
+                class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#778170]" /><CommonInput
                 v-model="form.password"
                 class="!py-3.5 !pl-11 !pr-12"
                 :type="showPassword ? 'text' : 'password'"

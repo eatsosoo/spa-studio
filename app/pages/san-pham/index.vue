@@ -40,9 +40,9 @@ useStoreSeo('Sản phẩm chăm sóc da và cơ thể | MIÊN Spa', 'Tìm sản 
       <section class="px-5 pb-28 md:px-10 md:pb-36 lg:px-14">
         <div class="mx-auto max-w-[1400px]">
           <div class="mb-6 grid gap-5 md:grid-cols-[1fr_220px_auto] md:items-end">
-            <label class="field-block">Tìm sản phẩm<input v-model="search" type="search" placeholder="Tên sản phẩm, nhu cầu chăm sóc…"></label>
-            <label class="field-block">Sắp xếp<select v-model="sort"><option value="name">Tên A–Z</option><option value="price-asc">Giá thấp đến cao</option><option value="price-desc">Giá cao đến thấp</option></select></label>
-            <label class="flex min-h-12 items-center gap-3 text-sm"><input v-model="inStock" type="checkbox" class="size-4 accent-[#4c5d43]">Chỉ hiện còn hàng</label>
+            <label class="field-block">Tìm sản phẩm<CommonInput v-model="search" type="search" placeholder="Tên sản phẩm, nhu cầu chăm sóc…" /></label>
+            <label class="field-block">Sắp xếp<CommonSelect v-model="sort"><option value="name">Tên A–Z</option><option value="price-asc">Giá thấp đến cao</option><option value="price-desc">Giá cao đến thấp</option></CommonSelect></label>
+            <label class="flex min-h-12 items-center gap-3 text-sm"><CommonInput v-model="inStock" type="checkbox" class="size-4 accent-[#4c5d43]" />Chỉ hiện còn hàng</label>
           </div>
           <p class="mb-5 text-xs text-[#62695f]" role="status">{{ visibleProducts.length }} sản phẩm phù hợp</p>
           <div class="mb-12 flex max-w-full gap-2 overflow-x-auto border-b border-[#78816f]/20 pb-5">

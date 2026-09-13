@@ -157,7 +157,7 @@ async function removeRow() {
         <button v-for="(filter, index) in config.filters" :key="filter.label" type="button" class="filter-tab" :class="activeFilter === index ? 'filter-tab--active' : ''" @click="selectFilter(index)">{{ filter.label }}</button>
       </div>
       <div class="flex gap-2">
-        <label class="admin-search"><AppIcon name="search" :size="17" /><input v-model="search" type="search" :placeholder="config.searchPlaceholder"></label>
+        <label class="admin-search"><AppIcon name="search" :size="17" /><CommonInput v-model="search" type="search" :placeholder="config.searchPlaceholder" /></label>
         <button type="button" class="grid size-10 shrink-0 place-items-center rounded-full border border-[#78816f]/25 text-[#566150] transition hover:bg-[#e7e3d8] active:scale-[0.96]" aria-label="Làm mới dữ liệu" @click="() => refresh()"><AppIcon name="refresh" :size="17" /></button>
       </div>
     </div>
