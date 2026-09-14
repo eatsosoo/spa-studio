@@ -71,6 +71,16 @@ function confirm() { if (rows.value.length) { emit('import', rows.value); rows.v
 
 <template>
   <CommonModal :open="open" title="Import lịch nội dung" description="Đọc tệp .xlsx hoặc .xls, kiểm tra dữ liệu trước khi thêm vào hàng chờ." size="lg" @close="$emit('close')">
+    <div class="mb-5 flex flex-col gap-3 rounded-xl border border-[#78816f]/20 bg-[#fffdf8] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <strong class="text-sm text-[#35402f]">Lần đầu import lịch?</strong>
+        <p class="mt-1 text-xs leading-5 text-[#747c70]">Tải file mẫu, thay nội dung ví dụ rồi tải lại tại đây.</p>
+      </div>
+      <a href="/templates/mau-import-lich-noi-dung-ai.xlsx" download class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#596b50]/25 bg-[#edf1e9] px-4 text-xs font-semibold text-[#465440] transition hover:border-[#596b50]/45 hover:bg-[#e4eadf] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#596b50]">
+        <AppIcon name="download" :size="17" />
+        Tải file Excel mẫu
+      </a>
+    </div>
     <label class="group grid cursor-pointer place-items-center rounded-xl border border-dashed border-[#78816f]/35 bg-[#f2eee4] px-6 py-10 text-center transition hover:border-[#52614b] hover:bg-[#ece8dd]">
       <CommonInput type="file" accept=".xlsx,.xls" class="sr-only" @change="selectFile" />
       <span class="grid size-11 place-items-center rounded-full bg-[#dde3d8] text-[#465440]"><AppIcon name="upload" :size="20" /></span>

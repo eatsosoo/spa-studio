@@ -34,6 +34,7 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-else-if="name === 'image'"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></template>
     <template v-else-if="name === 'folder'"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5Z"/></template>
     <template v-else-if="name === 'upload'"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></template>
+    <template v-else-if="name === 'download'"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></template>
     <template v-else-if="name === 'copy'"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></template>
     <template v-else-if="name === 'move'"><path d="M5 12h14M14 7l5 5-5 5M9 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></template>
     <template v-else-if="name === 'grid'"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></template>
