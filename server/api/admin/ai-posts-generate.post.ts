@@ -1,10 +1,14 @@
+import { attachMissingFolderImages } from '../../utils/ai-post-images'
+import { listMediaDirectory, safeFilename, safeMediaDirectory } from '../../utils/post-media'
+
 type GenerateBody = {
   title?: string
   category?: string
   keyword?: string
   articleType?: string
   wordRange?: string
-  targetUrl?: string
+  targetAction?: string
+  imageSource?: { kind?: 'folder' | 'image'; path?: string; folder?: string; filename?: string }
   keepTitle?: boolean
 }
 
@@ -23,12 +27,29 @@ export default defineEventHandler(async (event) => {
   const apiKey = String(config.openaiApiKey ?? '').trim()
   if (!apiKey) throw createError({ statusCode: 503, statusMessage: 'Chưa cấu hình OPENAI_API_KEY trên máy chủ.' })
 
+  const source = body.imageSource
+  let imageSourceLabel = 'không chọn'
+  let folderImages: Array<{ url: string; filename: string }> = []
+  if (source?.kind === 'folder') {
+    const path = safeMediaDirectory(source.path)
+    imageSourceLabel = `thư mục ${path}`
+    folderImages = (await listMediaDirectory(path)).images.slice(0, 3)
+  } else if (source?.kind === 'image') {
+    const folder = safeMediaDirectory(source.folder)
+    const filename = safeFilename(source.filename)
+    const image = (await listMediaDirectory(folder)).images.find(item => item.filename === filename)
+    if (!image) throw createError({ statusCode: 404, statusMessage: 'Ảnh đã chọn không còn tồn tại trong Thư viện ảnh.' })
+    imageSourceLabel = `ảnh ${folder ? `${folder}/` : ''}${filename}`
+    folderImages = [image]
+  }
+
   const instructions = [
     'Bạn là biên tập viên nội dung tiếng Việt của MIÊN Spa.',
     'Viết rõ ràng, ấm áp, điềm tĩnh, không khoa trương và không dùng biểu tượng cảm xúc.',
     'Không chẩn đoán, không hứa hẹn chữa bệnh, không bịa dẫn chứng hoặc số liệu y khoa.',
-    'Nội dung HTML chỉ dùng các thẻ p, h2, h3, ul, ol, li, strong, em, blockquote và a.',
-    'Mỗi đoạn ngắn, có tiêu đề phụ hữu ích và kết thúc bằng lời mời nhẹ nhàng nếu có trang đích.',
+    'Nội dung HTML chỉ dùng các thẻ p, h2, h3, ul, ol, li, strong, em, blockquote, a và img.',
+    'Mỗi đoạn ngắn, có tiêu đề phụ hữu ích và kết thúc bằng CTA tự nhiên khi có chỉ dẫn CTA.',
+    folderImages.length ? 'Chèn các ảnh được cung cấp vào vị trí phù hợp trong bài. Chỉ dùng đúng URL ảnh đã cung cấp, không tự tạo URL mới.' : 'Không chèn ảnh khi không có ảnh được cung cấp.',
   ].join(' ')
   const input = [
     `Tiêu đề: ${title}`,
@@ -36,7 +57,9 @@ export default defineEventHandler(async (event) => {
     `Dạng bài: ${body.articleType || 'Hướng dẫn'}`,
     `Độ dài mong muốn: ${body.wordRange || '900–1.200'} từ`,
     `Từ khóa chính: ${body.keyword || title}`,
-    `Trang đích: ${body.targetUrl || 'không có'}`,
+    `Nguồn ảnh: ${imageSourceLabel}`,
+    `Ảnh có sẵn: ${folderImages.length ? folderImages.map((image, index) => `${index + 1}. ${image.url} (${image.filename})`).join('; ') : 'không có'}`,
+    `CTA / Trang đích: ${body.targetAction || 'không có'}`,
     body.keepTitle === false ? 'Có thể tinh chỉnh tiêu đề cho tự nhiên hơn.' : 'Giữ nguyên tiêu đề đã cho.',
   ].join('\n')
 
@@ -71,5 +94,12 @@ export default defineEventHandler(async (event) => {
   if (!response.ok) throw createError({ statusCode: response.status, statusMessage: result.error?.message || 'OpenAI không thể tạo bài viết.' })
   const output = result.output_text ?? result.output?.flatMap(item => item.content ?? []).find(item => item.type === 'output_text')?.text
   if (!output) throw createError({ statusCode: 502, statusMessage: 'OpenAI không trả về nội dung bài viết.' })
-  try { return JSON.parse(output) } catch { throw createError({ statusCode: 502, statusMessage: 'Nội dung AI trả về không đúng định dạng.' }) }
+  try {
+    const draft = JSON.parse(output)
+    return {
+      ...draft,
+      content: attachMissingFolderImages(String(draft.content ?? ''), folderImages, title),
+      featuredImage: folderImages[0]?.url ?? '',
+    }
+  } catch { throw createError({ statusCode: 502, statusMessage: 'Nội dung AI trả về không đúng định dạng.' }) }
 })

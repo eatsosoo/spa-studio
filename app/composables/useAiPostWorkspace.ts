@@ -22,7 +22,7 @@ function starterJobs(): AiPostJob[] {
   ] as const
   return rows.map(([title, category, keyword, cluster, articleType, wordRange, day, hour]) => ({
     id: id(), title, category, keyword, cluster, articleType, wordRange,
-    targetUrl: '/lieu-trinh', scheduledAt: dateAfter(day, hour), status: 'scheduled', createdAt: new Date().toISOString(),
+    targetAction: 'CTA đặt lịch: /dat-lich', imageSource: null, scheduledAt: dateAfter(day, hour), status: 'scheduled', createdAt: new Date().toISOString(),
   }))
 }
 
@@ -38,7 +38,12 @@ export function useAiPostWorkspace() {
     if (!import.meta.client || hydrated.value) return
     try {
       const saved = localStorage.getItem(storageKey)
-      jobs.value = saved ? JSON.parse(saved) : starterJobs()
+      const restored = (saved ? JSON.parse(saved) : starterJobs()) as Array<AiPostJob & { targetUrl?: string; imageFolder?: string }>
+      jobs.value = restored.map(({ targetUrl, imageFolder, ...job }) => ({
+        ...job,
+        targetAction: job.targetAction ?? targetUrl ?? '',
+        imageSource: job.imageSource ?? (imageFolder ? { kind: 'folder', path: imageFolder, name: imageFolder.split('/').at(-1) || imageFolder } : null),
+      }))
     } catch {
       jobs.value = starterJobs()
     }

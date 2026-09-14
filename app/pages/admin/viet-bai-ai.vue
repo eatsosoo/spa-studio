@@ -51,6 +51,7 @@ async function generate(ids: string[]) {
         focusKeyword: draft.focusKeyword,
         metaTitle: draft.metaTitle,
         metaDescription: draft.metaDescription,
+        featuredImage: draft.featuredImage,
       } })
       patch(id, { status: job.afterCreate === 'published' && !job.scheduledAt ? 'published' : job.scheduledAt ? 'scheduled' : 'generated' })
       notice.value = `Đã tạo bài “${draft.title}”.`

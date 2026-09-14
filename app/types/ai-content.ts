@@ -1,5 +1,9 @@
 export type AiPostStatus = 'queued' | 'generating' | 'generated' | 'scheduled' | 'published' | 'error'
 
+export type AiPostMediaSource =
+  | { kind: 'folder'; path: string; name: string; count?: number }
+  | { kind: 'image'; folder: string; filename: string; url: string; thumbnailUrl: string }
+
 export type AiPostJob = {
   id: string
   title: string
@@ -8,7 +12,8 @@ export type AiPostJob = {
   cluster: string
   articleType: string
   wordRange: string
-  targetUrl: string
+  targetAction: string
+  imageSource: AiPostMediaSource | null
   scheduledAt: string | null
   afterCreate?: 'draft' | 'published'
   keepTitle?: boolean
@@ -25,6 +30,7 @@ export type AiPostDraft = {
   focusKeyword: string
   metaTitle: string
   metaDescription: string
+  featuredImage?: string
 }
 
 export const aiPostStatusLabels: Record<AiPostStatus, string> = {

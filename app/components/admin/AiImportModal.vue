@@ -57,10 +57,13 @@ async function selectFile(event: Event) {
     const typeCol = column(/loại bài|dạng bài/)
     const wordsCol = column(/số từ|độ dài/)
     const targetCol = column(/trang đích|hành động|cta/)
+    const folderCol = column(/thư mục ảnh|thư mục hình|image folder/)
     rows.value = matrix.slice(headerIndex + 1).map(row => ({
       title: clean(row[titleCol]), category: 'Chăm sóc tại nhà', keyword: keywordCol >= 0 ? clean(row[keywordCol]) : '', cluster: clusterCol >= 0 ? clean(row[clusterCol]) : '',
       articleType: typeCol >= 0 ? clean(row[typeCol]) : 'Hướng dẫn', wordRange: wordsCol >= 0 ? clean(row[wordsCol]) : '900–1.200',
-      targetUrl: targetCol >= 0 ? (clean(row[targetCol]).match(/https?:\/\/\S+/)?.[0] ?? clean(row[targetCol])) : '', scheduledAt: dateCol >= 0 ? isoDate(row[dateCol], timeCol >= 0 ? row[timeCol] : '') : null,
+      targetAction: targetCol >= 0 ? clean(row[targetCol]) : '',
+      imageSource: folderCol >= 0 && clean(row[folderCol]) ? { kind: 'folder' as const, path: clean(row[folderCol]).replaceAll('\\', '/').replace(/^\/+|\/+$/g, ''), name: clean(row[folderCol]).replaceAll('\\', '/').split('/').filter(Boolean).at(-1) || clean(row[folderCol]) } : null,
+      scheduledAt: dateCol >= 0 ? isoDate(row[dateCol], timeCol >= 0 ? row[timeCol] : '') : null,
     })).filter(row => row.title).slice(0, 500)
     if (!rows.value.length) throw new Error('Tệp không có dòng nội dung hợp lệ.')
   } catch (failure) { error.value = failure instanceof Error ? failure.message : 'Không thể đọc tệp Excel.' } finally { reading.value = false }
@@ -85,7 +88,7 @@ function confirm() { if (rows.value.length) { emit('import', rows.value); rows.v
       <CommonInput type="file" accept=".xlsx,.xls" class="sr-only" @change="selectFile" />
       <span class="grid size-11 place-items-center rounded-full bg-[#dde3d8] text-[#465440]"><AppIcon name="upload" :size="20" /></span>
       <strong class="mt-4 text-sm text-[#35402f]">{{ reading ? 'Đang đọc tệp…' : fileName || 'Chọn tệp Excel' }}</strong>
-      <span class="mt-2 text-xs text-[#7b8277]">Nhận diện các cột tiêu đề, ngày, giờ, từ khóa, cụm nội dung, loại bài và trang đích.</span>
+      <span class="mt-2 text-xs text-[#7b8277]">Nhận diện tiêu đề, lịch đăng, từ khóa, CTA/trang đích và thư mục ảnh.</span>
     </label>
     <p v-if="error" class="mt-4 border-l-2 border-[#9a655b] bg-[#f0e2dd] px-4 py-3 text-xs text-[#774b43]" role="alert">{{ error }}</p>
     <div v-if="rows.length" class="mt-5 overflow-hidden rounded-lg border border-[#78816f]/20">
