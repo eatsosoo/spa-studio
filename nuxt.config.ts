@@ -8,6 +8,8 @@ export default defineNuxtConfig({
   components: [{ path: '~/components', pathPrefix: false }],
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    openaiModel: process.env.OPENAI_MODEL ?? 'gpt-5-mini',
     adminBootstrapUsername: process.env.ADMIN_BOOTSTRAP_USERNAME,
     adminBootstrapPassword: process.env.ADMIN_BOOTSTRAP_PASSWORD,
     adminBootstrapEmail: process.env.ADMIN_BOOTSTRAP_EMAIL,

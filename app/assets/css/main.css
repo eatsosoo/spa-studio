@@ -238,6 +238,7 @@ select {
 .status-badge--pending { background: #ebe3ce; color: #796537; }
 .status-badge--muted { background: #e5e2dc; color: #6d706b; }
 .status-badge--neutral { background: #e1ded4; color: #596253; }
+.status-badge--danger { background: #f0dfda; color: #814f47; }
 
 .admin-sidebar {
   position: fixed;

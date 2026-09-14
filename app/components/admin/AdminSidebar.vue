@@ -43,6 +43,7 @@ const items = [
   { label: "Đặt lịch", to: "/admin/dat-lich", icon: "calendar" },
   { label: "Nhân viên", to: "/admin/nhan-vien", icon: "staff" },
   { label: "Bài viết", to: "/admin/bai-viet", icon: "posts" },
+  { label: "Viết bài AI", to: "/admin/viet-bai-ai", icon: "sparkles" },
   { label: "Thư viện ảnh", to: "/admin/thu-vien-anh", icon: "folder" },
   { label: "Chăm sóc sức khỏe", to: "/admin/kinh-nghiem", icon: "book" },
 ];
