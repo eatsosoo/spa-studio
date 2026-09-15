@@ -84,7 +84,8 @@ async function saveBooking(id: number | null, body: Record<string, unknown>) {
   if (Number.isNaN(start.getTime())) throw createError({ statusCode: 422, statusMessage: 'Ngày hoặc giờ hẹn không hợp lệ.' })
   const end = new Date(start.getTime() + service.durationMinutes * 60_000)
   const [knownCustomer] = await db.select({ id: customers.id }).from(customers).where(and(eq(customers.phone, phone), isNull(customers.deletedAt))).limit(1)
-  const appointmentValues = { branchId: await defaultBranch(db), customerId: knownCustomer?.id, customerName: customer, customerPhone: phone, startsAt: start, endsAt: end, status: statusValue(body, 'status', bookingStatuses, 'pending'), source: body.source === 'website' ? 'website' as const : 'admin' as const, subtotal: service.price, totalAmount: service.price, notes: textValue(body, 'note', false) }
+  const source = body.source === 'website' ? 'website' as const : body.source === 'chatbot' ? 'chatbot' as const : 'admin' as const
+  const appointmentValues = { branchId: await defaultBranch(db), customerId: knownCustomer?.id, customerName: customer, customerPhone: phone, startsAt: start, endsAt: end, status: statusValue(body, 'status', bookingStatuses, 'pending'), source, subtotal: service.price, totalAmount: service.price, notes: textValue(body, 'note', false) }
   let reference = ''
   await db.transaction(async tx => {
     let appointmentId = id

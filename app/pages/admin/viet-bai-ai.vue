@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AiPostDraft, AiPostJob } from '~/types/ai-content'
+import type { AiPostDraft, AiPostJob, AiPostMediaSource } from '~/types/ai-content'
 
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: 'Viết bài AI | MIÊN' })
@@ -11,10 +11,13 @@ const scheduleOpen = ref(false)
 const schedulingJob = ref<AiPostJob | null>(null)
 const scheduleValue = ref('')
 const busyIds = ref<string[]>([])
+const mediaOpen = ref(false)
+const mediaJob = ref<AiPostJob | null>(null)
+const mediaSource = ref<AiPostMediaSource | null>(null)
 const notice = ref('')
 const pageError = ref('')
 
-onMounted(hydrate)
+onMounted(() => hydrate().catch((failure) => { pageError.value = errorMessage(failure) }))
 
 const counts = computed(() => ({
   waiting: jobs.value.filter(job => ['queued', 'scheduled'].includes(job.status)).length,
@@ -22,10 +25,12 @@ const counts = computed(() => ({
   scheduled: jobs.value.filter(job => job.scheduledAt).length,
 }))
 
-function addItems(items: Omit<AiPostJob, 'id' | 'createdAt' | 'status'>[]) {
-  const count = add(items)
-  notice.value = count ? `Đã thêm ${count} bài vào workspace.` : 'Không có tiêu đề mới để thêm.'
-  importOpen.value = false
+async function addItems(items: Omit<AiPostJob, 'id' | 'createdAt' | 'status'>[]) {
+  try {
+    const count = await add(items)
+    notice.value = count ? `Đã thêm ${count} bài vào hàng chờ.` : 'Không có tiêu đề mới để thêm.'
+    importOpen.value = false
+  } catch (failure) { pageError.value = errorMessage(failure) }
 }
 
 function errorMessage(value: unknown) {
@@ -39,8 +44,8 @@ async function generate(ids: string[]) {
     const job = jobs.value.find(item => item.id === id)
     if (!job || !['queued', 'scheduled', 'error'].includes(job.status) || busyIds.value.includes(id)) continue
     busyIds.value.push(id)
-    patch(id, { status: 'generating', error: undefined })
     try {
+      await patch(id, { status: 'generating', error: undefined })
       const draft = await $fetch<AiPostDraft>('/api/admin/ai-posts-generate', { method: 'POST', body: job })
       await $fetch('/api/admin/posts', { method: 'POST', body: {
         title: draft.title,
@@ -53,11 +58,11 @@ async function generate(ids: string[]) {
         metaDescription: draft.metaDescription,
         featuredImage: draft.featuredImage,
       } })
-      patch(id, { status: job.afterCreate === 'published' && !job.scheduledAt ? 'published' : job.scheduledAt ? 'scheduled' : 'generated' })
+      await patch(id, { status: job.afterCreate === 'published' && !job.scheduledAt ? 'published' : job.scheduledAt ? 'scheduled' : 'generated' })
       notice.value = `Đã tạo bài “${draft.title}”.`
     } catch (failure) {
       const message = errorMessage(failure)
-      patch(id, { status: 'error', error: message })
+      await patch(id, { status: 'error', error: message })
       pageError.value = message
     } finally {
       busyIds.value = busyIds.value.filter(value => value !== id)
@@ -77,11 +82,28 @@ function toLocalInput(value: string) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16)
 }
 
-function saveSchedule() {
+async function saveSchedule() {
   if (!schedulingJob.value || !scheduleValue.value) return
-  patch(schedulingJob.value.id, { scheduledAt: new Date(scheduleValue.value).toISOString(), status: schedulingJob.value.status === 'generated' ? 'scheduled' : schedulingJob.value.status })
-  scheduleOpen.value = false
-  notice.value = 'Đã cập nhật lịch đăng.'
+  try {
+    await patch(schedulingJob.value.id, { scheduledAt: new Date(scheduleValue.value).toISOString(), status: schedulingJob.value.status === 'generated' ? 'scheduled' : schedulingJob.value.status })
+    scheduleOpen.value = false
+    notice.value = 'Đã cập nhật lịch đăng.'
+  } catch (failure) { pageError.value = errorMessage(failure) }
+}
+
+function openMedia(job: AiPostJob) {
+  mediaJob.value = job
+  mediaSource.value = job.imageSource
+  mediaOpen.value = true
+}
+
+async function saveMedia() {
+  if (!mediaJob.value) return
+  try {
+    await patch(mediaJob.value.id, { imageSource: mediaSource.value })
+    mediaOpen.value = false
+    notice.value = 'Đã cập nhật nguồn ảnh cho bài viết.'
+  } catch (failure) { pageError.value = errorMessage(failure) }
 }
 </script>
 
@@ -107,7 +129,7 @@ function saveSchedule() {
 
     <div v-if="view === 'queue'" class="mt-7 grid gap-8">
       <AiPostComposer @add="addItems" />
-      <AiPostQueue :jobs="jobs" :busy-ids="busyIds" @generate="generate" @remove="remove" @schedule="openSchedule" />
+      <AiPostQueue :jobs="jobs" :busy-ids="busyIds" @generate="generate" @remove="remove" @schedule="openSchedule" @edit="openMedia" />
     </div>
     <AiPostCalendar v-else class="mt-7" :jobs="jobs" />
 
@@ -115,6 +137,10 @@ function saveSchedule() {
     <CommonModal :open="scheduleOpen" title="Xếp lịch đăng" :description="schedulingJob?.title" size="sm" @close="scheduleOpen = false">
       <label class="admin-field"><span>Ngày và giờ đăng</span><CommonInput v-model="scheduleValue" type="datetime-local" /><small class="font-normal leading-5 text-[#83897f]">Lịch dùng múi giờ của thiết bị quản trị.</small></label>
       <template #footer><div class="flex justify-end gap-3"><AppButton label="Hủy" variant="secondary" @click="scheduleOpen = false" /><AppButton label="Lưu lịch" icon="calendar" :disabled="!scheduleValue" @click="saveSchedule" /></div></template>
+    </CommonModal>
+    <CommonModal :open="mediaOpen" title="Đổi nguồn ảnh" :description="mediaJob?.title" size="md" @close="mediaOpen = false">
+      <AdminMediaSourcePicker v-model="mediaSource" />
+      <template #footer><div class="flex justify-end gap-3"><AppButton label="Hủy" variant="secondary" @click="mediaOpen = false" /><AppButton label="Lưu nguồn ảnh" icon="image" @click="saveMedia" /></div></template>
     </CommonModal>
   </main>
 </template>

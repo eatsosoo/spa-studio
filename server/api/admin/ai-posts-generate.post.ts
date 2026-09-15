@@ -1,5 +1,6 @@
 import { attachMissingFolderImages } from '../../utils/ai-post-images'
 import { listMediaDirectory, safeFilename, safeMediaDirectory } from '../../utils/post-media'
+import { activeArticlePrompt } from '../../utils/ai-prompts'
 
 type GenerateBody = {
   title?: string
@@ -43,14 +44,7 @@ export default defineEventHandler(async (event) => {
     folderImages = [image]
   }
 
-  const instructions = [
-    'Bạn là biên tập viên nội dung tiếng Việt của MIÊN Spa.',
-    'Viết rõ ràng, ấm áp, điềm tĩnh, không khoa trương và không dùng biểu tượng cảm xúc.',
-    'Không chẩn đoán, không hứa hẹn chữa bệnh, không bịa dẫn chứng hoặc số liệu y khoa.',
-    'Nội dung HTML chỉ dùng các thẻ p, h2, h3, ul, ol, li, strong, em, blockquote, a và img.',
-    'Mỗi đoạn ngắn, có tiêu đề phụ hữu ích và kết thúc bằng CTA tự nhiên khi có chỉ dẫn CTA.',
-    folderImages.length ? 'Chèn các ảnh được cung cấp vào vị trí phù hợp trong bài. Chỉ dùng đúng URL ảnh đã cung cấp, không tự tạo URL mới.' : 'Không chèn ảnh khi không có ảnh được cung cấp.',
-  ].join(' ')
+  const instructions = `${await activeArticlePrompt()}\n\n${folderImages.length ? 'Chèn các ảnh được cung cấp vào vị trí phù hợp trong bài.' : 'Không chèn ảnh khi không có ảnh được cung cấp.'}`
   const input = [
     `Tiêu đề: ${title}`,
     `Chuyên mục: ${body.category || 'Chăm sóc tại nhà'}`,

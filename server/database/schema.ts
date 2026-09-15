@@ -455,7 +455,7 @@ export const appointments = mysqlTable('appointments', {
   startsAt: timestamp('starts_at', { mode: 'date' }).notNull(),
   endsAt: timestamp('ends_at', { mode: 'date' }).notNull(),
   status: mysqlEnum('status', ['pending', 'confirmed', 'checked_in', 'in_service', 'completed', 'cancelled', 'no_show']).default('pending').notNull(),
-  source: mysqlEnum('source', ['website', 'phone', 'walk_in', 'admin']).default('website').notNull(),
+  source: mysqlEnum('source', ['website', 'chatbot', 'phone', 'walk_in', 'admin']).default('website').notNull(),
   subtotal: money('subtotal').default('0').notNull(),
   discountAmount: money('discount_amount').default('0').notNull(),
   totalAmount: money('total_amount').default('0').notNull(),
@@ -674,6 +674,82 @@ export const posts = mysqlTable('posts', {
 }, (table) => [
   uniqueIndex('posts_slug_unique').on(table.slug),
   index('posts_status_published_idx').on(table.status, table.publishedAt),
+])
+
+export const aiPromptRevisions = mysqlTable('ai_prompt_revisions', {
+  id: id(),
+  promptKey: varchar('prompt_key', { length: 80 }).notNull(),
+  content: text('content').notNull(),
+  isActive: boolean('is_active').default(false).notNull(),
+  createdBy: bigint('created_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+}, (table) => [
+  index('ai_prompt_revisions_key_created_idx').on(table.promptKey, table.createdAt),
+  index('ai_prompt_revisions_key_active_idx').on(table.promptKey, table.isActive),
+])
+
+export const aiPostJobs = mysqlTable('ai_post_jobs', {
+  id: id(),
+  title: varchar('title', { length: 250 }).notNull(),
+  category: varchar('category', { length: 150 }).notNull(),
+  keyword: varchar('keyword', { length: 180 }).default('').notNull(),
+  cluster: varchar('cluster', { length: 150 }).default('').notNull(),
+  articleType: varchar('article_type', { length: 80 }).default('Hướng dẫn').notNull(),
+  wordRange: varchar('word_range', { length: 40 }).default('900–1.200').notNull(),
+  targetAction: varchar('target_action', { length: 500 }).default('').notNull(),
+  imageSource: json('image_source').$type<Record<string, unknown> | null>(),
+  scheduledAt: timestamp('scheduled_at', { mode: 'date' }),
+  afterCreate: mysqlEnum('after_create', ['draft', 'published']).default('draft').notNull(),
+  keepTitle: boolean('keep_title').default(true).notNull(),
+  status: mysqlEnum('status', ['queued', 'generating', 'generated', 'scheduled', 'published', 'error']).default('queued').notNull(),
+  generatedPostId: bigint('generated_post_id', { mode: 'number', unsigned: true }).references(() => posts.id, { onDelete: 'set null' }),
+  error: text('error'),
+  createdBy: bigint('created_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (table) => [
+  index('ai_post_jobs_status_schedule_idx').on(table.status, table.scheduledAt),
+  index('ai_post_jobs_created_idx').on(table.createdAt),
+])
+
+export const chatSessions = mysqlTable('chat_sessions', {
+  id: id(),
+  publicToken: varchar('public_token', { length: 64 }).notNull(),
+  status: mysqlEnum('status', ['active', 'closed', 'hidden']).default('active').notNull(),
+  pageUrl: varchar('page_url', { length: 500 }),
+  lastMessageAt: timestamp('last_message_at', { mode: 'date' }).defaultNow().notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (table) => [
+  uniqueIndex('chat_sessions_public_token_unique').on(table.publicToken),
+  index('chat_sessions_status_last_idx').on(table.status, table.lastMessageAt),
+])
+
+export const chatMessages = mysqlTable('chat_messages', {
+  id: id(),
+  sessionId: bigint('session_id', { mode: 'number', unsigned: true }).notNull().references(() => chatSessions.id, { onDelete: 'cascade' }),
+  role: mysqlEnum('role', ['user', 'assistant']).notNull(),
+  content: text('content').notNull(),
+  sources: json('sources').$type<Array<{ label: string; url?: string }>>(),
+  createdAt: createdAt(),
+}, (table) => [index('chat_messages_session_created_idx').on(table.sessionId, table.createdAt)])
+
+export const chatLeads = mysqlTable('chat_leads', {
+  id: id(),
+  sessionId: bigint('session_id', { mode: 'number', unsigned: true }).notNull().references(() => chatSessions.id, { onDelete: 'cascade' }),
+  customerName: varchar('customer_name', { length: 150 }),
+  phone: varchar('phone', { length: 30 }),
+  serviceName: varchar('service_name', { length: 150 }),
+  preferredAt: timestamp('preferred_at', { mode: 'date' }),
+  note: text('note'),
+  status: mysqlEnum('status', ['incomplete', 'complete', 'booked', 'contacted', 'closed']).default('incomplete').notNull(),
+  appointmentId: bigint('appointment_id', { mode: 'number', unsigned: true }).references(() => appointments.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (table) => [
+  uniqueIndex('chat_leads_session_unique').on(table.sessionId),
+  index('chat_leads_status_updated_idx').on(table.status, table.updatedAt),
+  index('chat_leads_phone_idx').on(table.phone),
 ])
 
 export const systemSettings = mysqlTable('system_settings', {

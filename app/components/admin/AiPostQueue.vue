@@ -55,6 +55,7 @@ function generateSelected() { const ids = selected.value.filter(id => props.jobs
             <td class="px-3 py-4 align-top"><StatusBadge :label="aiPostStatusLabels[job.status]" /></td>
             <td class="py-3 text-right align-top"><div class="flex justify-end gap-1 opacity-100 transition md:opacity-55 md:group-hover:opacity-100">
               <button v-if="['queued', 'scheduled', 'error'].includes(job.status)" type="button" class="grid size-8 place-items-center rounded-full text-[#53604e] transition hover:bg-[#dce2d7]" :disabled="busyIds.includes(job.id)" aria-label="Tạo bài" @click="$emit('generate', [job.id])"><AppIcon name="sparkles" :size="15" /></button>
+              <button v-if="['queued', 'scheduled', 'error'].includes(job.status)" type="button" class="grid size-8 place-items-center rounded-full text-[#6c7566] transition hover:bg-[#dcd8cd]" aria-label="Đổi nguồn ảnh" @click="$emit('edit', job)"><AppIcon name="image" :size="15" /></button>
               <button type="button" class="grid size-8 place-items-center rounded-full text-[#6c7566] transition hover:bg-[#dcd8cd]" aria-label="Xếp lịch" @click="$emit('schedule', job)"><AppIcon name="calendar" :size="15" /></button>
               <button type="button" class="grid size-8 place-items-center rounded-full text-[#866158] transition hover:bg-[#ead8d3]" aria-label="Xóa khỏi hàng chờ" @click="$emit('remove', job.id)"><AppIcon name="trash" :size="15" /></button>
             </div></td>

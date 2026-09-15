@@ -17,6 +17,12 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 - `/admin/dat-lich` — quản lý lịch hẹn.
 - `/admin/nhan-vien` — quản lý nhân viên.
 - `/admin/bai-viet` — quản lý bài viết.
+- `/admin/viet-bai-ai` — hàng chờ tạo bài AI lưu trong database, xếp lịch và chọn nguồn ảnh.
+- `/admin/huong-dan-ai` — chỉnh Markdown hướng dẫn AI, lưu lịch sử và khôi phục phiên bản.
+- `/admin/thu-vien-anh` — quản lý ảnh, thư mục nhiều tầng, upload nhiều ảnh hoặc nguyên folder.
+- `/admin/khach-chatbot` — quản lý thông tin và hội thoại khách để lại qua chatbot.
+
+Chatbot được hiển thị trên các trang công khai. Câu trả lời được giới hạn theo liệu trình, sản phẩm, bài viết và thông tin chi nhánh đang có trong database. Yêu cầu đặt lịch từ chatbot được lưu với nguồn `chatbot` và trạng thái chờ xác nhận.
 
 ## Chạy dự án
 
@@ -43,6 +49,9 @@ Sau đó mở `http://localhost:3000/admin/dang-nhap` để đăng nhập. Sessi
 - `GET /api/admin/inventory/recipes` và `PUT /api/admin/inventory/recipes/:serviceId` quản lý định mức vật tư dịch vụ.
 - Các action `/api/admin/orders/:id/confirm`, `/pay`, `/cancel` lần lượt giữ hàng FEFO, tiêu thụ phần đã giữ và giải phóng giữ hàng.
 - `POST /api/booking` ghi yêu cầu đặt lịch từ landing page vào MySQL.
+- `POST /api/chat/message` trò chuyện với trợ lý dựa trên dữ liệu đang hoạt động; `POST /api/chat/booking` tạo yêu cầu lịch từ chatbot.
+- `/api/admin/ai-prompt` quản lý phiên bản hướng dẫn AI; `/api/admin/ai-post-jobs` quản lý hàng chờ tạo bài.
+- `/api/admin/chat-leads` quản lý khách và lịch sử hội thoại từ chatbot.
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` xử lý session quản trị.
 - `PATCH /api/auth/profile` cập nhật hồ sơ hoặc đổi mật khẩu.
 
