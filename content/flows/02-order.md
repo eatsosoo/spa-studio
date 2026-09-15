@@ -6,6 +6,10 @@ entrypoint: POST /api/orders
 transaction: Đơn hàng, dòng hàng và reservation được tạo nguyên tử; deadlock được thử lại tối đa ba lần
 steps:
   - title: Xác minh giỏ hàng
+    id: validate-cart
+    kind: start
+    next:
+      - to: validate-order
     type: client
     detail: Client gọi API kiểm tra lại giá, trạng thái bán và tồn khả dụng trước khi gửi đơn.
     source: server/api/cart/validate.post.ts
@@ -22,6 +26,15 @@ steps:
         purpose: Tính quantity - reserved_quantity.
         fields: []
   - title: Kiểm tra đơn
+    id: validate-order
+    kind: decision
+    next:
+      - to: lock-products
+        label: Đơn mới
+        tone: success
+      - to: existing-order
+        label: Trùng idempotency key
+        tone: default
     type: api
     detail: Chuẩn hóa người nhận, địa chỉ, phương thức thanh toán, idempotency key và access token.
     source: server/services/store-orders.ts#createStoreOrder
@@ -37,6 +50,15 @@ steps:
             change: So sánh
             value: SHA-256 của access token
   - title: Khóa sản phẩm
+    id: lock-products
+    kind: decision
+    next:
+      - to: create-order
+        label: Đủ tồn
+        tone: success
+      - to: stock-rejected
+        label: Hết / thiếu tồn
+        tone: danger
     type: service
     detail: Khóa các dòng sản phẩm để giá và trạng thái không thay đổi giữa lúc kiểm tra và giữ tồn.
     source: server/services/store-orders.ts#createStoreOrder
@@ -53,6 +75,9 @@ steps:
             change: Snapshot
             value: Dùng tính subtotal và unit_price
   - title: Tạo khách và đơn
+    id: create-order
+    next:
+      - to: reserve-stock
     type: database
     detail: Upsert khách theo số điện thoại, sau đó tạo đơn confirmed với snapshot giao hàng.
     source: server/services/store-orders.ts#createStoreOrder
@@ -97,6 +122,9 @@ steps:
             change: Gán mới
             value: Khóa chống trùng và SHA-256 token tra cứu
   - title: Giữ tồn theo lô
+    id: reserve-stock
+    next:
+      - to: order-complete
     type: database
     detail: Tạo dòng hàng, phân bổ lô hạn gần nhất và tăng lượng giữ ở cả lô lẫn tồn tổng hợp.
     source: server/services/inventory.ts#reserveInventoryFefo
@@ -140,6 +168,8 @@ steps:
             change: Gán mới
             value: active
   - title: Hoàn tất giao dịch
+    id: order-complete
+    kind: end
     type: result
     detail: Ghi lịch sử confirmed và trả reference cùng access token để khách tra cứu.
     source: server/services/store-orders.ts#createStoreOrder
@@ -152,6 +182,20 @@ steps:
           - name: status
             change: Gán mới
             value: confirmed
+  - title: Trả lại đơn hiện có
+    id: existing-order
+    kind: end
+    type: result
+    detail: Khi idempotency key và access token hợp lệ, API trả dữ liệu đơn đã tạo mà không ghi thêm database.
+    source: server/services/store-orders.ts#createStoreOrder
+    tables: []
+  - title: Từ chối giữ tồn
+    id: stock-rejected
+    kind: end
+    type: result
+    detail: Transaction được rollback và API chỉ rõ sản phẩm không còn đủ số lượng khả dụng.
+    source: server/services/store-orders.ts#createStoreOrder
+    tables: []
 ---
 
 ## Khi thanh toán hoặc hủy
@@ -160,4 +204,3 @@ steps:
 - `sales_orders` chuyển thành `paid`, `payment_status = paid`, `fulfillment_status = delivered`; đồng thời ghi `paid_at`, `completed_at` và `total_cost`.
 - Hủy đơn chuyển reservation thành `released`, hoàn lại `reserved_quantity` trên lô và tồn tổng hợp nhưng không tăng `quantity` vì hàng chưa từng xuất.
 - Đơn quá 24 giờ, chưa xử lý giao hàng, được tự hủy trong lần chạy API tiếp theo.
-

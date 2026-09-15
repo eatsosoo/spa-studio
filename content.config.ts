@@ -14,8 +14,15 @@ const tableChange = z.object({
 })
 
 const flowStep = z.object({
+  id: z.string().optional(),
   title: z.string(),
   type: z.enum(['client', 'api', 'service', 'database', 'result']),
+  kind: z.enum(['start', 'process', 'decision', 'end']).optional(),
+  next: z.array(z.object({
+    to: z.string(),
+    label: z.string().optional(),
+    tone: z.enum(['default', 'success', 'danger']).optional(),
+  })).optional(),
   detail: z.string(),
   source: z.string(),
   transaction: z.boolean().default(false),

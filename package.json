@@ -26,6 +26,7 @@
     "@tiptap/extension-placeholder": "^3.30.5",
     "@tiptap/starter-kit": "^3.30.5",
     "@tiptap/vue-3": "^3.30.5",
+    "@vue-flow/core": "^1.48.2",
     "drizzle-orm": "^0.45.2",
     "mysql2": "^3.24.2",
     "nuxt": "^4.5.2",

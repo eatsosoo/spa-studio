@@ -6,11 +6,24 @@ entrypoint: POST /api/auth/login
 transaction: Tạo session là một lần ghi; mỗi request hợp lệ cập nhật last_seen_at
 steps:
   - title: Gửi thông tin đăng nhập
+    id: submit-login
+    kind: start
+    next:
+      - to: find-account
     type: client
     detail: Quản trị viên gửi username hoặc email, mật khẩu và tùy chọn ghi nhớ.
     source: app/pages/admin/dang-nhap.vue
     tables: []
   - title: Tìm tài khoản
+    id: find-account
+    kind: decision
+    next:
+      - to: verify-password
+        label: Tài khoản hoạt động
+        tone: success
+      - to: login-rejected
+        label: Không hợp lệ
+        tone: danger
     type: api
     detail: API chỉ chấp nhận tài khoản chưa bị soft delete và kiểm tra trạng thái trước khi tạo phiên.
     source: server/api/auth/login.post.ts
@@ -29,11 +42,23 @@ steps:
             change: Đọc để xác minh
             value: Chuỗi scrypt:salt:derived-key
   - title: Xác minh mật khẩu
+    id: verify-password
+    kind: decision
+    next:
+      - to: create-session
+        label: Khớp
+        tone: success
+      - to: login-rejected
+        label: Không khớp
+        tone: danger
     type: service
     detail: Dẫn xuất khóa bằng scrypt với salt đã lưu và so sánh constant-time.
     source: server/utils/admin-auth.ts#verifyPassword
     tables: []
   - title: Tạo session
+    id: create-session
+    next:
+      - to: send-cookie
     type: database
     detail: Sinh token 32 byte; database chỉ nhận SHA-256 hash, địa chỉ IP, user agent và thời hạn.
     source: server/utils/admin-auth.ts#createAdminSession
@@ -58,11 +83,23 @@ steps:
             change: Giá trị mặc định
             value: null
   - title: Gửi cookie an toàn
+    id: send-cookie
+    next:
+      - to: guard-request
     type: result
     detail: Trình duyệt nhận mien_admin_session; JavaScript phía client không đọc được token.
     source: server/utils/admin-auth.ts#createAdminSession
     tables: []
   - title: Kiểm tra mỗi request
+    id: guard-request
+    kind: decision
+    next:
+      - to: admin-access
+        label: Phiên hợp lệ
+        tone: success
+      - to: access-denied
+        label: Hết hạn / thu hồi
+        tone: danger
     type: service
     detail: Middleware hash cookie, kiểm tra thời hạn, trạng thái thu hồi, tài khoản và vai trò owner hoặc manager.
     source: server/utils/admin-auth.ts#getAdminUser
@@ -92,6 +129,8 @@ steps:
         purpose: Nạp vai trò theo chi nhánh và yêu cầu owner hoặc manager.
         fields: []
   - title: Thu hồi khi đăng xuất
+    id: revoke-session
+    kind: end
     type: database
     detail: Session được đánh dấu thu hồi trước khi cookie bị xóa khỏi trình duyệt.
     source: server/utils/admin-auth.ts#revokeAdminSession
@@ -106,6 +145,30 @@ steps:
           - name: revoke_reason
             change: Gán mới
             value: logout
+  - title: Truy cập khu vực quản trị
+    id: admin-access
+    type: result
+    detail: Middleware gắn thông tin người dùng và vai trò vào request trước khi route quản trị tiếp tục xử lý.
+    source: server/middleware/admin-auth.ts
+    next:
+      - to: revoke-session
+        label: Người dùng đăng xuất
+        tone: default
+    tables: []
+  - title: Từ chối đăng nhập
+    id: login-rejected
+    kind: end
+    type: result
+    detail: API trả lỗi xác thực chung, không tiết lộ tài khoản hay mật khẩu nào không hợp lệ.
+    source: server/api/auth/login.post.ts
+    tables: []
+  - title: Chặn request quản trị
+    id: access-denied
+    kind: end
+    type: result
+    detail: Middleware trả lỗi 401 hoặc 403 và không cho request đi vào nghiệp vụ quản trị.
+    source: server/middleware/admin-auth.ts
+    tables: []
 ---
 
 ## Thuộc tính cookie
@@ -116,4 +179,3 @@ steps:
 - `Path=/`: phiên dùng cho toàn bộ khu vực quản trị.
 
 Mật khẩu được hash bằng `scrypt`; session token được hash bằng SHA-256 vì bản thân token đã có entropy ngẫu nhiên cao. Hai loại hash phục vụ hai mô hình đe dọa khác nhau.
-

@@ -19,6 +19,9 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-else-if="name === 'posts'"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5"/></template>
     <template v-else-if="name === 'search'"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></template>
     <template v-else-if="name === 'plus'"><path d="M12 5v14M5 12h14"/></template>
+    <template v-else-if="name === 'minus'"><path d="M5 12h14"/></template>
+    <template v-else-if="name === 'maximize'"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></template>
+    <template v-else-if="name === 'unlock'"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></template>
     <template v-else-if="name === 'bell'"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></template>
     <template v-else-if="name === 'menu'"><path d="M4 7h16M4 12h16M4 17h16"/></template>
     <template v-else-if="name === 'close'"><path d="m6 6 12 12M18 6 6 18"/></template>

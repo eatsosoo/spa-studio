@@ -6,16 +6,32 @@ entrypoint: POST /api/booking
 transaction: appointments và appointment_services được ghi trong cùng transaction
 steps:
   - title: Gửi biểu mẫu
+    id: submit-booking
+    kind: start
+    next:
+      - to: validate-booking
     type: client
     detail: Khách nhập tên, số điện thoại, dịch vụ, ngày mong muốn và ghi chú.
     source: app/pages/index.vue
     tables: []
   - title: Kiểm tra payload
+    id: validate-booking
+    kind: decision
+    next:
+      - to: prepare-booking
+        label: Hợp lệ
+        tone: success
+      - to: reject-booking
+        label: Thiếu / sai dữ liệu
+        tone: danger
     type: api
     detail: Chuẩn hóa số điện thoại và từ chối dữ liệu thiếu hoặc sai định dạng với HTTP 422.
     source: server/api/booking.post.ts
     tables: []
   - title: Chuẩn bị dữ liệu
+    id: prepare-booking
+    next:
+      - to: create-booking
     type: service
     detail: Tìm khách theo số điện thoại, tìm dịch vụ theo tên và xác định chi nhánh mặc định.
     source: server/modules/admin/resources/bookings.ts
@@ -39,6 +55,9 @@ steps:
         purpose: Xác định branch_id mặc định cho lịch hẹn.
         fields: []
   - title: Tạo lịch hẹn
+    id: create-booking
+    next:
+      - to: create-booking-service
     type: database
     detail: Tạo bản ghi lịch chính với snapshot khách hàng, thời gian và tổng tiền.
     source: server/modules/admin/resources/bookings.ts#saveBooking
@@ -76,6 +95,9 @@ steps:
             change: Snapshot
             value: services.price
   - title: Tạo dòng dịch vụ
+    id: create-booking-service
+    next:
+      - to: booking-pending
     type: database
     detail: Snapshot dịch vụ để lịch sử không thay đổi khi danh mục dịch vụ được sửa sau này.
     source: server/modules/admin/resources/bookings.ts#saveBooking
@@ -101,6 +123,8 @@ steps:
             change: Gán mới
             value: scheduled
   - title: Chờ quản trị xác nhận
+    id: booking-pending
+    kind: end
     type: result
     detail: API trả mã tham chiếu; lịch xuất hiện trên màn hình Đặt lịch để nhân viên phân công và xác nhận.
     source: app/pages/admin/dat-lich.vue
@@ -116,6 +140,13 @@ steps:
         operation: SELECT
         purpose: Hiển thị dịch vụ và nhân viên phụ trách.
         fields: []
+  - title: Yêu cầu bị từ chối
+    id: reject-booking
+    kind: end
+    type: result
+    detail: API trả HTTP 422 kèm thông báo cụ thể để khách sửa dữ liệu trên biểu mẫu.
+    source: server/api/booking.post.ts
+    tables: []
 ---
 
 ## Trường hợp cần chú ý
@@ -123,4 +154,3 @@ steps:
 - Website hiện gán giờ mặc định là `09:00`; nhân viên cần xác nhận lại giờ với khách.
 - Khi một lịch được chuyển sang `completed`, hệ thống có thể xuất vật tư theo định mức FEFO. Thao tác này chỉ được thực hiện một lần qua `inventory_deducted_at`.
 - Nếu dịch vụ chưa có trong danh mục, resource hiện có thể tạo dịch vụ tạm với giá `0`. Nên chuẩn hóa danh mục trước khi mở rộng form đặt lịch.
-

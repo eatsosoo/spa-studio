@@ -47,7 +47,6 @@ const items = [
   { label: "Viết bài AI", to: "/admin/viet-bai-ai", icon: "sparkles" },
   { label: "Hướng dẫn AI", to: "/admin/huong-dan-ai", icon: "settings" },
   { label: "Thư viện ảnh", to: "/admin/thu-vien-anh", icon: "folder" },
-  { label: "Chăm sóc sức khỏe", to: "/admin/kinh-nghiem", icon: "book" },
 ];
 const inventoryItems = [
   { label: "Tổng quan kho", to: "/admin/kho" },

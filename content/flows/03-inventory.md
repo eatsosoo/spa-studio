@@ -6,11 +6,18 @@ entrypoint: POST /api/admin/inventory/documents/:id/post
 transaction: Toàn bộ lô, số dư, ledger, trạng thái chứng từ và audit log được ghi nguyên tử
 steps:
   - title: Lập chứng từ
+    id: compose-document
+    kind: start
+    next:
+      - to: save-draft
     type: client
     detail: Nhân viên chọn loại phiếu, kho nguồn/đích, ngày nghiệp vụ và các dòng sản phẩm.
     source: app/components/admin/AdminInventoryDocumentDrawer.vue
     tables: []
   - title: Lưu bản nháp
+    id: save-draft
+    next:
+      - to: lock-document
     type: api
     detail: API kiểm tra loại chứng từ, kho, sản phẩm, số lượng và giới hạn hàng trả trước khi lưu.
     source: server/services/inventory.ts#createInventoryDocument
@@ -55,6 +62,15 @@ steps:
             change: Gán với hàng trả
             value: sellable hoặc damaged
   - title: Khóa chứng từ
+    id: lock-document
+    kind: decision
+    next:
+      - to: apply-movement
+        label: Còn là bản nháp
+        tone: success
+      - to: posting-rejected
+        label: Đã được xử lý
+        tone: danger
     type: service
     detail: Khi ghi sổ, transaction khóa chứng từ và chỉ tiếp tục nếu trạng thái vẫn là draft.
     source: server/services/inventory.ts#postInventoryDocument
@@ -72,6 +88,9 @@ steps:
         purpose: Tải toàn bộ dòng theo thứ tự id.
         fields: []
   - title: Áp dụng biến động
+    id: apply-movement
+    next:
+      - to: finalize-document
     type: database
     detail: Nhập tạo lô mới; giảm kho xuất FEFO; điều chuyển vừa xuất kho nguồn vừa tạo lô tại kho đích.
     source: server/services/inventory.ts#applyInventoryMovement
@@ -127,6 +146,9 @@ steps:
             change: Snapshot
             value: Giá vốn lô và người ghi sổ
   - title: Chốt chứng từ
+    id: finalize-document
+    next:
+      - to: refresh-inventory
     type: database
     detail: Chứng từ được chuyển sang posted và thao tác được ghi audit log trong cùng transaction.
     source: server/services/inventory.ts#postInventoryDocument
@@ -159,6 +181,8 @@ steps:
             change: Snapshot JSON
             value: reference, type và postedAt
   - title: Cập nhật báo cáo
+    id: refresh-inventory
+    kind: end
     type: result
     detail: Workspace kho đọc lại tồn, lô, ledger và cảnh báo; không cần bước đồng bộ riêng.
     source: server/services/inventory.ts#getInventoryWorkspace
@@ -167,6 +191,13 @@ steps:
         operation: SELECT
         purpose: Tổng hợp số dư, giá trị tồn, cảnh báo hạn dùng và dòng hàng.
         fields: []
+  - title: Dừng ghi sổ
+    id: posting-rejected
+    kind: end
+    type: result
+    detail: API dừng transaction nếu chứng từ không còn ở trạng thái draft, tránh ghi sổ trùng.
+    source: server/services/inventory.ts#postInventoryDocument
+    tables: []
 ---
 
 ## Quy tắc theo loại chứng từ
@@ -179,4 +210,3 @@ steps:
 | `return` | Đơn bán gốc | Bắt buộc | Chỉ `sellable` quay lại tồn; `damaged` không tăng tồn |
 
 Chứng từ `posted` là bất biến. Sai lệch sau ghi sổ cần được xử lý bằng chứng từ điều chỉnh hoặc chứng từ đảo, không sửa ledger cũ.
-
