@@ -3,7 +3,7 @@ defineProps<{ open: boolean }>();
 defineEmits<{ close: [] }>();
 
 const route = useRoute();
-const { user } = useAdminAuth();
+const { can } = useAdminAuth();
 const inventoryOpen = ref(route.path.startsWith("/admin/kho"));
 const documentationOpen = ref(route.path.startsWith("/admin/tai-lieu"));
 const flowsOpen = ref(route.path.startsWith("/admin/luong-chuc-nang"));
@@ -33,20 +33,21 @@ watch(
 );
 
 const primaryItems = [
-  { label: "Tổng quan", to: "/admin", icon: "dashboard" },
-  { label: "Khách hàng", to: "/admin/khach-hang", icon: "users" },
-  { label: "Sản phẩm", to: "/admin/san-pham", icon: "products" },
-  { label: "Đơn hàng", to: "/admin/don-hang", icon: "cart" },
-  { label: "Liệu trình", to: "/admin/lieu-trinh", icon: "services" },
+  { label: "Tổng quan", to: "/admin", icon: "dashboard", permission: "dashboard.read" },
+  { label: "Khách hàng", to: "/admin/khach-hang", icon: "users", permission: "customers.read" },
+  { label: "Sản phẩm", to: "/admin/san-pham", icon: "products", permission: "products.read" },
+  { label: "Đơn hàng", to: "/admin/don-hang", icon: "cart", permission: "orders.read" },
+  { label: "Liệu trình", to: "/admin/lieu-trinh", icon: "services", permission: "services.read" },
 ];
 const items = [
-  { label: "Đặt lịch", to: "/admin/dat-lich", icon: "calendar" },
-  { label: "Khách từ chatbot", to: "/admin/khach-chatbot", icon: "mail" },
-  { label: "Nhân viên", to: "/admin/nhan-vien", icon: "staff" },
-  { label: "Bài viết", to: "/admin/bai-viet", icon: "posts" },
-  { label: "Viết bài AI", to: "/admin/viet-bai-ai", icon: "sparkles" },
-  { label: "Hướng dẫn AI", to: "/admin/huong-dan-ai", icon: "settings" },
-  { label: "Thư viện ảnh", to: "/admin/thu-vien-anh", icon: "folder" },
+  { label: "Đặt lịch", to: "/admin/dat-lich", icon: "calendar", permission: "appointments.read" },
+  { label: "Khách từ chatbot", to: "/admin/khach-chatbot", icon: "mail", permission: "customers.read" },
+  { label: "Nhân viên", to: "/admin/nhan-vien", icon: "staff", permission: "employees.read" },
+  { label: "Tài khoản & phân quyền", to: "/admin/phan-quyen", icon: "settings", permission: "users.read" },
+  { label: "Bài viết", to: "/admin/bai-viet", icon: "posts", permission: "posts.read" },
+  { label: "Viết bài AI", to: "/admin/viet-bai-ai", icon: "sparkles", permission: "posts.read" },
+  { label: "Hướng dẫn AI", to: "/admin/huong-dan-ai", icon: "settings", permission: "posts.read" },
+  { label: "Thư viện ảnh", to: "/admin/thu-vien-anh", icon: "folder", permission: "posts.read" },
 ];
 const inventoryItems = [
   { label: "Tổng quan kho", to: "/admin/kho" },
@@ -127,7 +128,7 @@ function isDocumentationActive(to: string) {
         </p>
         <nav class="grid gap-1" aria-label="Điều hướng quản trị">
           <NuxtLink
-            v-for="item in primaryItems"
+            v-for="item in primaryItems.filter(item => can(item.permission))"
             :key="item.to"
             :to="item.to"
             class="admin-nav-item"
@@ -142,7 +143,7 @@ function isDocumentationActive(to: string) {
               >3</span
             >
           </NuxtLink>
-          <div class="mt-1">
+          <div v-if="can('inventory.read')" class="mt-1">
             <button
               type="button"
               class="admin-nav-item w-full text-left"
@@ -185,7 +186,7 @@ function isDocumentationActive(to: string) {
             </div>
           </div>
           <NuxtLink
-            v-for="item in items"
+            v-for="item in items.filter(item => can(item.permission) || (item.to === '/admin/phan-quyen' && can('roles.read')))"
             :key="item.to"
             :to="item.to"
             class="admin-nav-item"
@@ -200,7 +201,7 @@ function isDocumentationActive(to: string) {
               >3</span
             >
           </NuxtLink>
-          <div class="mt-1">
+          <div v-if="can('audit.read')" class="mt-1">
             <button
               type="button"
               class="admin-nav-item w-full text-left"
@@ -242,7 +243,7 @@ function isDocumentationActive(to: string) {
               >
             </div>
           </div>
-          <div class="mt-1">
+          <div v-if="can('audit.read')" class="mt-1">
             <button
               type="button"
               class="admin-nav-item w-full text-left"

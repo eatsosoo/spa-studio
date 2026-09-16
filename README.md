@@ -16,6 +16,7 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 - `/admin/kho` — tổng quan tồn, cảnh báo và biểu đồ nhập–xuất; submenu mở chứng từ, lô/hạn dùng, lịch sử, định mức dịch vụ và báo cáo giá vốn.
 - `/admin/dat-lich` — quản lý lịch hẹn.
 - `/admin/nhan-vien` — quản lý nhân viên.
+- `/admin/phan-quyen` — tạo tài khoản cho nhân viên, gán vai trò và quản lý quyền của vai trò.
 - `/admin/bai-viet` — quản lý bài viết.
 - `/admin/viet-bai-ai` — hàng chờ tạo bài AI lưu trong database, xếp lịch và chọn nguồn ảnh.
 - `/admin/huong-dan-ai` — chỉnh Markdown hướng dẫn AI, lưu lịch sử và khôi phục phiên bản.
@@ -55,7 +56,9 @@ Sau đó mở `http://localhost:3000/admin/dang-nhap` để đăng nhập. Sessi
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` xử lý session quản trị.
 - `PATCH /api/auth/profile` cập nhật hồ sơ hoặc đổi mật khẩu.
 
-Nhóm API `/api/admin` yêu cầu tài khoản có vai trò `owner` hoặc `manager`.
+Nhóm API `/api/admin` xác thực phiên và kiểm tra quyền riêng cho từng route. Vai trò được gán cho tài khoản tại chi nhánh `MAIN`; danh mục mã quyền được cập nhật bằng migration, còn vai trò tùy chỉnh và quyền gán cho vai trò được quản lý tại `/admin/phan-quyen`.
+
+Sau khi cập nhật mã nguồn, chạy `corepack pnpm db:migrate` để bổ sung quyền `orders.manage` trước khi sử dụng luồng đơn hàng trong bản phân quyền mới.
 
 ## Dữ liệu mẫu
 

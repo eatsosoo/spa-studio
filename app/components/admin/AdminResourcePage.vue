@@ -6,6 +6,11 @@ const props = defineProps<{ config: AdminResourceConfig; health?: boolean }>()
 const route = useRoute()
 const router = useRouter()
 const isPosts = computed(() => props.config.resource === 'posts')
+const { can } = useAdminAuth()
+const permissionPrefix = computed(() => props.config.resource === 'bookings' ? 'appointments' : props.config.resource)
+const canCreate = computed(() => can(`${permissionPrefix.value}.create`))
+const canUpdate = computed(() => can(`${permissionPrefix.value}.update`))
+const canRemove = computed(() => can(props.config.resource === 'bookings' ? 'appointments.cancel' : `${permissionPrefix.value}.delete`))
 const search = ref('')
 const debouncedSearch = ref('')
 const activeFilter = ref(0)
@@ -149,7 +154,7 @@ async function removeRow() {
         <h1 class="mt-3 text-3xl font-semibold tracking-[-0.045em] text-[#2f382c] md:text-4xl">{{ config.title }}</h1>
         <p class="mt-3 max-w-2xl text-sm leading-6 text-[#6d746a]">{{ config.description }}</p>
       </div>
-      <AppButton :label="config.addLabel" icon="plus" @click="openCreate" />
+      <AppButton v-if="canCreate" :label="config.addLabel" icon="plus" @click="openCreate" />
     </div>
 
     <div class="mt-7 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -169,7 +174,7 @@ async function removeRow() {
           <button type="button" class="grid size-7 shrink-0 place-items-center rounded-full hover:bg-[#d5ded0]" aria-label="Đóng thông báo" @click="successMessage = ''"><AppIcon name="close" :size="14" /></button>
         </div>
       </Transition>
-      <AdminDataTable v-if="rows.length || pending" :columns="config.columns" :rows="rows" :loading="pending" @edit="openEdit" @remove="deletingRow = $event" />
+      <AdminDataTable v-if="rows.length || pending" :columns="config.columns" :rows="rows" :loading="pending" :actions="canUpdate || canRemove" :can-edit="canUpdate" :can-remove="canRemove" @edit="openEdit" @remove="deletingRow = $event" />
       <div v-else-if="error" class="rounded-sm border border-[#aa746c]/25 bg-[#f1e6e0] px-6 py-9 text-center">
         <p class="text-sm font-semibold text-[#65443e]">Không tải được dữ liệu</p>
         <p class="mx-auto mt-2 max-w-lg text-xs leading-5 text-[#80665f]">{{ errorMessage(error) }}</p>

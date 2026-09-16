@@ -1,6 +1,6 @@
 ---
 title: Đăng nhập khu vực quản trị
-description: Mật khẩu và session token không được lưu ở dạng rõ; middleware kiểm tra phiên trên mọi route admin.
+description: Mật khẩu và session token không được lưu ở dạng rõ; middleware kiểm tra phiên và quyền trên từng API quản trị.
 order: 4
 entrypoint: POST /api/auth/login
 transaction: Tạo session là một lần ghi; mỗi request hợp lệ cập nhật last_seen_at
@@ -101,7 +101,7 @@ steps:
         label: Hết hạn / thu hồi
         tone: danger
     type: service
-    detail: Middleware hash cookie, kiểm tra thời hạn, trạng thái thu hồi, tài khoản và vai trò owner hoặc manager.
+    detail: Middleware hash cookie, kiểm tra thời hạn, trạng thái thu hồi, tài khoản và vai trò được gán tại chi nhánh MAIN. Mỗi API quản trị tiếp tục kiểm tra mã quyền tương ứng.
     source: server/utils/admin-auth.ts#getAdminUser
     tables:
       - name: auth_sessions
@@ -126,7 +126,7 @@ steps:
             value: Thời điểm request hiện tại
       - name: user_roles, roles, branches
         operation: SELECT
-        purpose: Nạp vai trò theo chi nhánh và yêu cầu owner hoặc manager.
+        purpose: Nạp vai trò và quyền tại chi nhánh MAIN; owner có toàn quyền.
         fields: []
   - title: Thu hồi khi đăng xuất
     id: revoke-session

@@ -3,6 +3,7 @@ import type { AdminColumn, AdminRow } from '~/types'
 
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Quản lý kho | MIÊN Admin' })
+const { can } = useAdminAuth()
 
 type Stock = { productId: number; product: string; sku: string; locationId: number | null; location: string; quantity: number; reserved: number; available: number; minimum: number }
 type InventoryDocument = { id: number; reference: string; type: 'receipt' | 'adjustment' | 'transfer' | 'return'; status: 'draft' | 'posted' | 'cancelled'; occurredAt: string; sourceLocation: string; destinationLocation: string; supplierName: string | null; invoiceNumber: string | null; itemCount: number; totalQuantity: number }
@@ -121,7 +122,7 @@ async function cancelDocument(id: string | number | undefined) {
   <section v-else class="mx-auto w-full max-w-[1500px] px-5 py-8 md:px-8 md:py-10 lg:px-10 lg:py-12">
     <div class="grid gap-7 border-b border-[#78816f]/20 pb-8 lg:grid-cols-[1fr_auto] lg:items-end">
       <div><p class="text-[0.63rem] font-semibold uppercase tracking-[0.18em] text-[#73806d]">Luân chuyển hàng hóa</p><h1 class="mt-3 text-3xl font-semibold tracking-[-0.045em] text-[#2f382c] md:text-4xl">Quản lý kho</h1><p class="mt-3 max-w-2xl text-sm leading-6 text-[#6d746a]">Theo dõi số dư, nhập hàng và mọi biến động tồn qua chứng từ có thể đối soát.</p></div>
-      <AppButton label="Tạo chứng từ" icon="plus" @click="drawerOpen = true; mutationError = ''" />
+      <AppButton v-if="can('inventory.adjust')" label="Tạo chứng từ" icon="plus" @click="drawerOpen = true; mutationError = ''" />
     </div>
 
     <div class="mt-7 grid gap-px overflow-hidden border-y border-[#78816f]/20 bg-[#78816f]/20 sm:grid-cols-2 xl:grid-cols-4">
@@ -164,8 +165,8 @@ async function cancelDocument(id: string | number | undefined) {
         <AdminDataTable :columns="documentColumns" :rows="documentRows" :loading="pending" paginate>
           <template #actions="{ row }">
             <div v-if="workspace.documents.find(item => item.id === Number(row.id))?.status === 'draft'" class="flex justify-end gap-1">
-              <button type="button" class="grid size-8 place-items-center rounded-full text-[#866158] transition hover:bg-[#ead8d3]" :disabled="postingId !== null || cancellingId !== null" :aria-label="`Hủy chứng từ ${row.reference}`" @click="cancelDocument(row.id)"><AppIcon name="close" :size="15" /></button>
-              <button type="button" class="grid size-8 place-items-center rounded-full text-[#4f6548] transition hover:bg-[#dfe7db]" :disabled="postingId !== null || cancellingId !== null" :aria-label="`Ghi sổ chứng từ ${row.reference}`" @click="postDocument(row.id)"><AppIcon name="check" :size="15" /></button>
+              <button v-if="can('inventory.adjust')" type="button" class="grid size-8 place-items-center rounded-full text-[#866158] transition hover:bg-[#ead8d3]" :disabled="postingId !== null || cancellingId !== null" :aria-label="`Hủy chứng từ ${row.reference}`" @click="cancelDocument(row.id)"><AppIcon name="close" :size="15" /></button>
+              <button v-if="can('inventory.adjust')" type="button" class="grid size-8 place-items-center rounded-full text-[#4f6548] transition hover:bg-[#dfe7db]" :disabled="postingId !== null || cancellingId !== null" :aria-label="`Ghi sổ chứng từ ${row.reference}`" @click="postDocument(row.id)"><AppIcon name="check" :size="15" /></button>
             </div>
           </template>
         </AdminDataTable>
@@ -173,6 +174,6 @@ async function cancelDocument(id: string | number | undefined) {
       </div>
     </div>
 
-    <AdminInventoryDocumentDrawer :open="drawerOpen" :products="workspace.options.products" :locations="workspace.options.locations" :orders="workspace.options.orders" :saving="saving" :api-error="mutationError" @close="drawerOpen = false" @save="saveDocument" />
+    <AdminInventoryDocumentDrawer v-if="can('inventory.adjust')" :open="drawerOpen" :products="workspace.options.products" :locations="workspace.options.locations" :orders="workspace.options.orders" :saving="saving" :api-error="mutationError" @close="drawerOpen = false" @save="saveDocument" />
   </section>
 </template>

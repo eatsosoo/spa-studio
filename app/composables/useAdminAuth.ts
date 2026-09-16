@@ -7,11 +7,13 @@ export type AdminSessionUser = {
   jobTitle: string
   initials: string
   roles: Array<{ code: string; name: string; branch: string }>
+  permissions: string[]
 }
 
 export function useAdminAuth() {
   const user = useState<AdminSessionUser | null>('admin-user', () => null)
   const logoutPending = useState('admin-logout-pending', () => false)
+  const can = (permission: string) => Boolean(user.value?.roles.some(role => role.code === 'owner') || user.value?.permissions.includes(permission))
 
   async function logout() {
     logoutPending.value = true
@@ -24,5 +26,5 @@ export function useAdminAuth() {
     }
   }
 
-  return { user, logoutPending, logout }
+  return { user, logoutPending, logout, can }
 }

@@ -2,7 +2,7 @@ import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } fr
 import { promisify } from 'node:util'
 import { and, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { authSessions, branches, employees, roles, userRoles, users } from '../database/schema'
+import { authSessions, branches, employees, permissions, rolePermissions, roles, userRoles, users } from '../database/schema'
 import { useDatabase } from '../database/client'
 
 const scrypt = promisify(scryptCallback)
@@ -18,6 +18,7 @@ export type AdminUser = {
   jobTitle: string
   initials: string
   roles: Array<{ code: string; name: string; branch: string }>
+  permissions: string[]
 }
 
 const sessionHash = (token: string) => createHash('sha256').update(token).digest('hex')
@@ -92,13 +93,22 @@ export async function getAdminUserById(userId: number): Promise<AdminUser> {
     .where(and(eq(users.id, userId), eq(users.status, 'active'), isNull(users.deletedAt))).limit(1)
   if (!account) throw createError({ statusCode: 401, statusMessage: 'Tài khoản không còn hoạt động.' })
 
-  const assignedRoles = await db.select({ code: roles.code, name: roles.name, branch: branches.name }).from(userRoles)
+  const assignedRoles = await db.select({ code: roles.code, name: roles.name, branch: branches.name, roleId: roles.id }).from(userRoles)
     .innerJoin(roles, eq(userRoles.roleId, roles.id)).innerJoin(branches, eq(userRoles.branchId, branches.id))
-    .where(eq(userRoles.userId, account.id))
-  if (!assignedRoles.some(role => role.code === 'owner' || role.code === 'manager')) throw createError({ statusCode: 403, statusMessage: 'Tài khoản không có quyền truy cập khu vực quản trị.' })
+    .where(and(eq(userRoles.userId, account.id), eq(branches.code, 'MAIN'), eq(branches.isActive, true)))
+  if (!assignedRoles.length) throw createError({ statusCode: 403, statusMessage: 'Tài khoản chưa được phân vai trò tại chi nhánh MAIN.' })
+
+  const granted = await db.select({ code: permissions.code }).from(userRoles)
+    .innerJoin(branches, eq(userRoles.branchId, branches.id))
+    .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
+    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(and(eq(userRoles.userId, account.id), eq(branches.code, 'MAIN'), eq(branches.isActive, true)))
+  const permissionCodes = assignedRoles.some(role => role.code === 'owner')
+    ? (await db.select({ code: permissions.code }).from(permissions)).map(row => row.code)
+    : [...new Set(granted.map(row => row.code))]
 
   const fullName = account.fullName?.trim() || account.username
-  return { id: account.id, username: account.username, email: account.email ?? '', phone: account.phone ?? '', fullName, jobTitle: account.jobTitle ?? assignedRoles[0]?.name ?? 'Quản trị viên', initials: initials(fullName), roles: assignedRoles }
+  return { id: account.id, username: account.username, email: account.email ?? '', phone: account.phone ?? '', fullName, jobTitle: account.jobTitle ?? assignedRoles[0]?.name ?? 'Nhân viên', initials: initials(fullName), roles: assignedRoles.map(({ code, name, branch }) => ({ code, name, branch })), permissions: permissionCodes }
 }
 
 export async function getAdminUser(event: H3Event, required = true): Promise<AdminUser | null> {

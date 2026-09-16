@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AdminColumn, AdminRow, PaginationMeta } from '~/types'
 
-const props = withDefaults(defineProps<{ columns: AdminColumn[]; rows: AdminRow[]; loading?: boolean; actions?: boolean; paginate?: boolean; defaultPageSize?: number; pageSizes?: number[] }>(), { actions: true, paginate: false, defaultPageSize: 10, pageSizes: () => [10, 20, 50] })
+const props = withDefaults(defineProps<{ columns: AdminColumn[]; rows: AdminRow[]; loading?: boolean; actions?: boolean; canEdit?: boolean; canRemove?: boolean; paginate?: boolean; defaultPageSize?: number; pageSizes?: number[] }>(), { actions: true, canEdit: true, canRemove: true, paginate: false, defaultPageSize: 10, pageSizes: () => [10, 20, 50] })
 defineEmits<{ edit: [row: AdminRow]; remove: [row: AdminRow] }>()
 const sortKey = ref('')
 const sortDirection = ref<'asc' | 'desc'>('asc')
@@ -107,8 +107,8 @@ function formatCell(value: string | number | undefined, type?: AdminColumn['type
           <td v-if="actions" class="py-3 text-right">
             <slot name="actions" :row="row">
               <div class="flex justify-end gap-1 opacity-100 transition md:opacity-50 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-                <button type="button" class="grid size-8 place-items-center rounded-full text-[#6c7566] transition hover:bg-[#dcd8cd] hover:text-[#35402f]" aria-label="Chỉnh sửa" @click="$emit('edit', row)"><AppIcon name="edit" :size="15" /></button>
-                <button type="button" class="grid size-8 place-items-center rounded-full text-[#866158] transition hover:bg-[#ead8d3] hover:text-[#713d34]" aria-label="Xóa" @click="$emit('remove', row)"><AppIcon name="trash" :size="15" /></button>
+                <button v-if="canEdit" type="button" class="grid size-8 place-items-center rounded-full text-[#6c7566] transition hover:bg-[#dcd8cd] hover:text-[#35402f]" aria-label="Chỉnh sửa" @click="$emit('edit', row)"><AppIcon name="edit" :size="15" /></button>
+                <button v-if="canRemove" type="button" class="grid size-8 place-items-center rounded-full text-[#866158] transition hover:bg-[#ead8d3] hover:text-[#713d34]" aria-label="Xóa" @click="$emit('remove', row)"><AppIcon name="trash" :size="15" /></button>
               </div>
             </slot>
           </td>
