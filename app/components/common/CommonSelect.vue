@@ -30,7 +30,7 @@ defineExpose({ element, focus })
 </script>
 
 <template>
-  <select ref="element" v-bind="$attrs" :value="effectiveValue ?? ''" @change="update">
+  <select ref="element" class="common-field" v-bind="$attrs" :value="effectiveValue ?? ''" @change="update">
     <slot />
   </select>
 </template>

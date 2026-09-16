@@ -47,6 +47,7 @@ defineExpose({ element, focus, click })
 <template>
   <input
     ref="element"
+    class="common-field"
     v-bind="$attrs"
     :value="inputValue"
     :checked="checked"

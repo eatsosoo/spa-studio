@@ -1,12 +1,19 @@
 <script setup lang="ts">
-defineProps<{ open: boolean }>();
-defineEmits<{ close: [] }>();
+const props = defineProps<{ open: boolean; collapsed: boolean }>();
+const emit = defineEmits<{ close: []; toggleCollapse: []; expand: [] }>();
 
 const route = useRoute();
 const { can } = useAdminAuth();
 const inventoryOpen = ref(route.path.startsWith("/admin/kho"));
 const documentationOpen = ref(route.path.startsWith("/admin/tai-lieu"));
 const flowsOpen = ref(route.path.startsWith("/admin/luong-chuc-nang"));
+
+watch(() => props.collapsed, (collapsed) => {
+  if (!collapsed) return;
+  inventoryOpen.value = false;
+  documentationOpen.value = false;
+  flowsOpen.value = false;
+});
 
 const { data: flowNavigationData } = await useAsyncData(
   "feature-flow-navigation",
@@ -80,6 +87,19 @@ function isDocumentationActive(to: string) {
   const view = new URLSearchParams(query ?? "").get("view");
   return view ? route.query.view === view : !route.query.view;
 }
+
+function toggleSection(section: 'inventory' | 'documentation' | 'flows') {
+  if (props.collapsed && window.matchMedia('(min-width: 1024px)').matches) {
+    emit('expand');
+    if (section === 'inventory') inventoryOpen.value = true;
+    if (section === 'documentation') documentationOpen.value = true;
+    if (section === 'flows') flowsOpen.value = true;
+    return;
+  }
+  if (section === 'inventory') inventoryOpen.value = !inventoryOpen.value;
+  if (section === 'documentation') documentationOpen.value = !documentationOpen.value;
+  if (section === 'flows') flowsOpen.value = !flowsOpen.value;
+}
 </script>
 
 <template>
@@ -94,19 +114,30 @@ function isDocumentationActive(to: string) {
 
   <aside
     class="admin-sidebar"
+    :data-collapsed="collapsed ? 'true' : undefined"
     :class="open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
   >
     <div
-      class="flex h-20 shrink-0 items-center justify-between border-b border-white/10 px-6"
+      class="admin-sidebar-header flex h-20 shrink-0 items-center justify-between border-b border-white/10 px-6"
     >
-      <NuxtLink to="/" class="flex items-center gap-3 text-[#f5f0e6]">
+      <NuxtLink to="/" class="admin-sidebar-brand flex items-center gap-3 text-[#f5f0e6]" title="Xem website">
         <span
           class="grid size-8 place-items-center rounded-full border border-[#dce3d7]/35"
         >
           <span class="h-3 w-3 rounded-tl-full rounded-br-full bg-[#cbd3c4]" />
         </span>
-        <span class="text-xs font-semibold tracking-[0.26em]">MIÊN</span>
+        <span class="admin-sidebar-label text-xs font-semibold tracking-[0.26em]">MIÊN</span>
       </NuxtLink>
+      <button
+        type="button"
+        class="admin-sidebar-toggle hidden size-9 shrink-0 place-items-center rounded-full text-[#cdd4c8] transition hover:bg-white/10 lg:grid"
+        :aria-label="collapsed ? 'Mở rộng menu quản trị' : 'Thu gọn menu quản trị'"
+        :title="collapsed ? 'Mở rộng menu' : 'Thu gọn menu'"
+        :aria-expanded="!collapsed"
+        @click="$emit('toggleCollapse')"
+      >
+        <AppIcon :name="collapsed ? 'arrow' : 'arrow-left'" :size="17" />
+      </button>
       <button
         type="button"
         class="grid size-9 place-items-center rounded-full text-[#cdd4c8] hover:bg-white/10 lg:hidden"
@@ -122,7 +153,7 @@ function isDocumentationActive(to: string) {
         class="admin-sidebar-scroll min-h-0 flex-1 overflow-y-auto px-3 py-6"
       >
         <p
-          class="mb-3 px-3 text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#99a494]"
+          class="admin-sidebar-heading mb-3 px-3 text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#99a494]"
         >
           Vận hành
         </p>
@@ -133,10 +164,11 @@ function isDocumentationActive(to: string) {
             :to="item.to"
             class="admin-nav-item"
             :class="isActive(item.to) ? 'admin-nav-item--active' : ''"
+            :title="collapsed ? item.label : undefined"
             @click="$emit('close')"
           >
             <AppIcon :name="item.icon" :size="18" />
-            <span>{{ item.label }}</span>
+            <span class="admin-sidebar-label">{{ item.label }}</span>
             <span
               v-if="item.to === '/admin/dat-lich'"
               class="ml-auto rounded-full bg-[#d9dfd2]/15 px-2 py-0.5 text-[0.64rem]"
@@ -147,6 +179,7 @@ function isDocumentationActive(to: string) {
             <button
               type="button"
               class="admin-nav-item w-full text-left"
+              :title="collapsed ? 'Quản lý kho' : undefined"
               :class="
                 route.path.startsWith('/admin/kho')
                   ? 'admin-nav-item--active'
@@ -154,21 +187,21 @@ function isDocumentationActive(to: string) {
               "
               :aria-expanded="inventoryOpen"
               aria-controls="inventory-submenu"
-              @click="inventoryOpen = !inventoryOpen"
+              @click="toggleSection('inventory')"
             >
               <AppIcon name="warehouse" :size="18" />
-              <span>Quản lý kho</span>
+              <span class="admin-sidebar-label">Quản lý kho</span>
               <AppIcon
                 name="chevron-down"
                 :size="13"
-                class="ml-auto opacity-60 transition-transform"
+                class="admin-sidebar-chevron ml-auto opacity-60 transition-transform"
                 :class="inventoryOpen ? 'rotate-180' : ''"
               />
             </button>
             <div
               v-show="inventoryOpen"
               id="inventory-submenu"
-              class="ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3"
+              class="admin-sidebar-submenu ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3"
             >
               <NuxtLink
                 v-for="child in inventoryItems"
@@ -191,10 +224,11 @@ function isDocumentationActive(to: string) {
             :to="item.to"
             class="admin-nav-item"
             :class="isActive(item.to) ? 'admin-nav-item--active' : ''"
+            :title="collapsed ? item.label : undefined"
             @click="$emit('close')"
           >
             <AppIcon :name="item.icon" :size="18" />
-            <span>{{ item.label }}</span>
+            <span class="admin-sidebar-label">{{ item.label }}</span>
             <span
               v-if="item.to === '/admin/dat-lich'"
               class="ml-auto rounded-full bg-[#d9dfd2]/15 px-2 py-0.5 text-[0.64rem]"
@@ -205,6 +239,7 @@ function isDocumentationActive(to: string) {
             <button
               type="button"
               class="admin-nav-item w-full text-left"
+              :title="collapsed ? 'Tài liệu' : undefined"
               :class="
                 route.path.startsWith('/admin/tai-lieu')
                   ? 'admin-nav-item--active'
@@ -212,21 +247,21 @@ function isDocumentationActive(to: string) {
               "
               :aria-expanded="documentationOpen"
               aria-controls="documentation-submenu"
-              @click="documentationOpen = !documentationOpen"
+              @click="toggleSection('documentation')"
             >
               <AppIcon name="book" :size="18" />
-              <span>Tài liệu</span>
+              <span class="admin-sidebar-label">Tài liệu</span>
               <AppIcon
                 name="chevron-down"
                 :size="13"
-                class="ml-auto opacity-60 transition-transform"
+                class="admin-sidebar-chevron ml-auto opacity-60 transition-transform"
                 :class="documentationOpen ? 'rotate-180' : ''"
               />
             </button>
             <div
               v-show="documentationOpen"
               id="documentation-submenu"
-              class="ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3"
+              class="admin-sidebar-submenu ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3"
             >
               <NuxtLink
                 v-for="child in documentationItems"
@@ -247,6 +282,7 @@ function isDocumentationActive(to: string) {
             <button
               type="button"
               class="admin-nav-item w-full text-left"
+              :title="collapsed ? 'Luồng chức năng' : undefined"
               :class="
                 route.path.startsWith('/admin/luong-chuc-nang')
                   ? 'admin-nav-item--active'
@@ -254,21 +290,21 @@ function isDocumentationActive(to: string) {
               "
               :aria-expanded="flowsOpen"
               aria-controls="feature-flow-submenu"
-              @click="flowsOpen = !flowsOpen"
+              @click="toggleSection('flows')"
             >
               <AppIcon name="flow" :size="18" />
-              <span>Luồng chức năng</span>
+              <span class="admin-sidebar-label">Luồng chức năng</span>
               <AppIcon
                 name="chevron-down"
                 :size="13"
-                class="ml-auto opacity-60 transition-transform"
+                class="admin-sidebar-chevron ml-auto opacity-60 transition-transform"
                 :class="flowsOpen ? 'rotate-180' : ''"
               />
             </button>
             <div
               v-show="flowsOpen"
               id="feature-flow-submenu"
-              class="ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3"
+              class="admin-sidebar-submenu ml-7 mt-1 grid gap-0.5 border-l border-white/10 pl-3"
             >
               <NuxtLink
                 to="/admin/luong-chuc-nang"
@@ -297,13 +333,14 @@ function isDocumentationActive(to: string) {
         </nav>
       </div>
 
-      <div class="shrink-0 border-t border-white/10 bg-[#303b2c] px-6 py-5">
+      <div class="admin-sidebar-footer shrink-0 border-t border-white/10 bg-[#303b2c] px-6 py-5">
         <NuxtLink
           to="/"
           class="flex items-center gap-3 text-xs text-[#b7c0b2] transition hover:text-white"
+          :title="collapsed ? 'Xem website' : undefined"
         >
           <AppIcon name="external" :size="17" />
-          Xem website
+          <span class="admin-sidebar-label">Xem website</span>
         </NuxtLink>
       </div>
     </div>

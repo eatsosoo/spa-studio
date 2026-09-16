@@ -33,6 +33,7 @@ defineExpose({ element, focus })
 <template>
   <textarea
     ref="element"
+    class="common-field"
     v-bind="$attrs"
     :value="effectiveValue ?? ''"
     :style="showOutline ? undefined : { outline: 'none' }"

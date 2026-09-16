@@ -250,7 +250,28 @@ select {
   width: 260px;
   flex-direction: column;
   background: #303b2c;
-  transition: transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 450ms cubic-bezier(0.16, 1, 0.3, 1), width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-sidebar-label {
+  overflow: hidden;
+  max-width: 190px;
+  white-space: nowrap;
+  transition: max-width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
+}
+
+@media (min-width: 1024px) {
+  .admin-sidebar[data-collapsed="true"] { width: 76px; }
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-header,
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-footer { justify-content: center; padding-inline: 0.75rem; }
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-brand,
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-heading,
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-submenu,
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-chevron { display: none; }
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-scroll { padding-inline: 0.75rem; }
+  .admin-sidebar[data-collapsed="true"] .admin-nav-item { justify-content: center; gap: 0; padding-inline: 0; }
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-label { max-width: 0; opacity: 0; pointer-events: none; }
+  .admin-sidebar[data-collapsed="true"] .admin-sidebar-footer a { justify-content: center; gap: 0; }
 }
 
 .admin-sidebar-scroll {
@@ -899,6 +920,8 @@ select {
 
 /* Shared storefront accessibility and reading rhythm. */
 :focus-visible { outline: 2px solid #4c5d43; outline-offset: 4px; }
+.common-field:focus-visible,
+.admin-shell[data-high-contrast="true"] .common-field:focus-visible { outline: none; }
 .article-content h2, .article-content h3 { scroll-margin-top: 2rem; }
 .article-content { overflow-wrap: anywhere; }
 .nav-link.router-link-exact-active { color: #34412f; text-decoration: underline; text-underline-offset: 8px; }
