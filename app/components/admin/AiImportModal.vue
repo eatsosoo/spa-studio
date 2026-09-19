@@ -34,6 +34,7 @@ async function selectFile(event: Event) {
   rows.value = []
   fileName.value = file.name
   try {
+    if (file.size > 10 * 1024 * 1024) throw new Error('Tệp Excel phải nhỏ hơn 10 MB.')
     const module = await import('xlsx')
     const XLSX = module.default ?? module
     const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false })

@@ -39,6 +39,8 @@ corepack pnpm dev
 
 Sau đó mở `http://localhost:3000/admin/dang-nhap` để đăng nhập. Session quản trị được lưu bằng cookie HttpOnly và có thời hạn bảy ngày.
 
+Chạy `corepack pnpm db:migrate` trước khi khởi động bản cập nhật để tạo bảng giới hạn tần suất cho các API công khai và đăng nhập. Mặc định hệ thống dùng địa chỉ IP của kết nối trực tiếp. Chỉ đặt `TRUST_PROXY=true` khi ứng dụng đứng sau reverse proxy tin cậy và proxy đó ghi đè header `X-Forwarded-For` do client gửi đến.
+
 ## API quản trị
 
 - `GET, POST /api/admin/:resource`

@@ -18,7 +18,7 @@ const meta = computed<PaginationMeta>(() => response.value?.meta ?? { page: 1, p
 const columns: AdminColumn[] = [
   { key: 'reference', label: 'Mã đơn' }, { key: 'createdAt', label: 'Thời điểm', type: 'date' }, { key: 'customer', label: 'Khách hàng' }, { key: 'itemCount', label: 'SL', type: 'number', align: 'right' }, { key: 'totalAmount', label: 'Tổng tiền', type: 'money', align: 'right' }, { key: 'fulfillmentStatusLabel', label: 'Giao hàng', type: 'status' }, { key: 'statusLabel', label: 'Đơn', type: 'status' },
 ]
-const filters = ['', 'Đã xác nhận', 'Đã hoàn tất', 'Đã hủy']
+const filters = ['', 'Chờ xác nhận', 'Đã xác nhận', 'Đã hoàn tất', 'Đã hủy']
 </script>
 
 <template>

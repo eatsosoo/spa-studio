@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import { employees, users } from '../../database/schema'
+import { authSessions, employees, users } from '../../database/schema'
 import { useDatabase } from '../../database/client'
-import { getAdminUser, hashPassword, verifyPassword } from '../../utils/admin-auth'
+import { createAdminSession, getAdminUser, hashPassword, verifyPassword } from '../../utils/admin-auth'
 
 export default defineEventHandler(async (event) => {
   const current = await getAdminUser(event)
@@ -24,6 +24,8 @@ export default defineEventHandler(async (event) => {
     await tx.update(users).set({ email, phone, ...(newPassword ? { passwordHash: await hashPassword(newPassword), passwordChangedAt: new Date() } : {}) }).where(eq(users.id, current!.id))
     const [employee] = await tx.select({ id: employees.id }).from(employees).where(and(eq(employees.userId, current!.id), isNull(employees.deletedAt))).limit(1)
     if (employee) await tx.update(employees).set({ fullName, email, phone }).where(eq(employees.id, employee.id))
+    if (newPassword) await tx.update(authSessions).set({ revokedAt: new Date(), revokeReason: 'password_changed' }).where(and(eq(authSessions.userId, current!.id), isNull(authSessions.revokedAt)))
   })
+  if (newPassword) await createAdminSession(event, current!.id)
   return { data: await getAdminUser(event) }
 })

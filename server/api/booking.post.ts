@@ -1,4 +1,5 @@
 import { getAdminResource } from '../services/admin-resources'
+import { checkPublicRateLimit } from '../utils/public-rate-limit'
 
 interface BookingPayload {
   name?: string
@@ -9,6 +10,7 @@ interface BookingPayload {
 }
 
 export default defineEventHandler(async (event) => {
+  await checkPublicRateLimit(event, 'booking', 10, 60 * 60_000)
   const body = await readBody<BookingPayload>(event)
   const phone = body.phone?.replace(/\s/g, '') ?? ''
 

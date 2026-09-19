@@ -2,8 +2,10 @@ import { and, eq, isNull, ne } from 'drizzle-orm'
 import { appointments, chatLeads, chatMessages, chatSessions, services } from '../../database/schema'
 import { useDatabase } from '../../database/client'
 import { getAdminResource } from '../../services/admin-resources'
+import { checkPublicRateLimit } from '../../utils/public-rate-limit'
 
 export default defineEventHandler(async (event) => {
+  await checkPublicRateLimit(event, 'chat-booking', 5, 60 * 60_000)
   const body = await readBody<{ token?: string; name?: string; phone?: string; service?: string; date?: string; time?: string; note?: string }>(event)
   const token = String(body.token ?? '')
   const name = String(body.name ?? '').trim()

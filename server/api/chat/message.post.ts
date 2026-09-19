@@ -2,27 +2,18 @@ import { randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import { branches, chatLeads, chatMessages, chatSessions, posts, products, services } from '../../database/schema'
 import { useDatabase } from '../../database/client'
+import { checkPublicRateLimit } from '../../utils/public-rate-limit'
 
 type ChatBody = { token?: string; message?: string; pageUrl?: string }
 type AiResponse = { output_text?: string; output?: Array<{ content?: Array<{ type?: string; text?: string }> }>; error?: { message?: string } }
 type ChatResult = { answer: string; lead: { name: string | null; phone: string | null; service: string | null; preferredAt: string | null; note: string | null }; wantsBooking: boolean }
-
-const attempts = new Map<string, { count: number; resetAt: number }>()
-
-function checkRateLimit(key: string) {
-  const now = Date.now()
-  const item = attempts.get(key)
-  if (!item || item.resetAt < now) { attempts.set(key, { count: 1, resetAt: now + 60_000 }); return }
-  if (item.count >= 20) throw createError({ statusCode: 429, statusMessage: 'Bạn gửi tin nhắn quá nhanh. Vui lòng chờ một phút.' })
-  item.count += 1
-}
 
 function outputText(result: AiResponse) {
   return result.output_text ?? result.output?.flatMap(item => item.content ?? []).find(item => item.type === 'output_text')?.text
 }
 
 export default defineEventHandler(async (event) => {
-  checkRateLimit(getRequestIP(event, { xForwardedFor: true }) ?? 'unknown')
+  await checkPublicRateLimit(event, 'chat-message', 20, 60_000)
   const body = await readBody<ChatBody>(event)
   const message = String(body.message ?? '').trim()
   if (!message || message.length > 1500) throw createError({ statusCode: 422, statusMessage: 'Tin nhắn cần có từ 1 đến 1.500 ký tự.' })

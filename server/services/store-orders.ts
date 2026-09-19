@@ -2,7 +2,6 @@ import { createHash, randomBytes } from 'node:crypto'
 import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { customers, products, salesOrderItems, salesOrders, salesOrderStatusHistory } from '../database/schema'
 import { useDatabase } from '../database/client'
-import { reserveInventoryFefo } from './inventory'
 import { releaseExpiredSalesOrders } from './sales-orders'
 import { storefrontContext } from './store-products'
 
@@ -14,7 +13,7 @@ const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 const reference = () => `DH-${Date.now().toString(36).toUpperCase()}-${randomBytes(2).toString('hex').toUpperCase()}`
 
 function orderLabels(order: { status: string; paymentStatus: string; fulfillmentStatus: string }) {
-  const statuses: Record<string, string> = { draft: 'Bản nháp', confirmed: 'Đã xác nhận', paid: 'Đã hoàn tất', cancelled: 'Đã hủy', refunded: 'Đã hoàn tiền' }
+  const statuses: Record<string, string> = { draft: 'Chờ xác nhận', confirmed: 'Đã xác nhận', paid: 'Đã hoàn tất', cancelled: 'Đã hủy', refunded: 'Đã hoàn tiền' }
   const payments: Record<string, string> = { unpaid: 'Chưa thanh toán', pending: 'Chờ thanh toán', paid: 'Đã thanh toán', failed: 'Thanh toán lỗi', partially_refunded: 'Hoàn tiền một phần', refunded: 'Đã hoàn tiền' }
   const fulfillment: Record<string, string> = { unfulfilled: 'Chờ xử lý', packing: 'Đang đóng gói', shipped: 'Đang giao', delivered: 'Đã giao', returned: 'Đã hoàn hàng' }
   return { statusLabel: statuses[order.status] ?? order.status, paymentStatusLabel: payments[order.paymentStatus] ?? order.paymentStatus, fulfillmentStatusLabel: fulfillment[order.fulfillmentStatus] ?? order.fulfillmentStatus }
@@ -73,8 +72,6 @@ export async function createStoreOrder(body: Payload) {
     await tx.insert(customers).values({ code: `KH-${Date.now().toString(36)}-${randomBytes(2).toString('hex')}`.toUpperCase(), fullName: name, phone, email: email || null, address: fullAddress, source: 'website' }).onDuplicateKeyUpdate({ set: { fullName: name, email: email || null, address: fullAddress } })
     const [customer] = await tx.select({ id: customers.id }).from(customers).where(eq(customers.phone, phone)).limit(1)
     const orderReference = reference()
-    const now = new Date()
-    const reservationExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
     const [created] = await tx.insert(salesOrders).values({
       reference: orderReference,
       branchId,
@@ -95,11 +92,9 @@ export async function createStoreOrder(body: Payload) {
       paymentMethod,
       paymentStatus: paymentMethod === 'bank_transfer' ? 'pending' : 'unpaid',
       fulfillmentStatus: 'unfulfilled',
-      status: 'confirmed',
+      status: 'draft',
       subtotal: subtotal.toFixed(2),
       totalAmount: (subtotal + shippingFee).toFixed(2),
-      confirmedAt: now,
-      reservationExpiresAt,
     }).$returningId()
     if (!created) throw createError({ statusCode: 500, statusMessage: 'Không thể tạo đơn hàng.' })
 
@@ -108,14 +103,8 @@ export async function createStoreOrder(body: Payload) {
       const unitPrice = Number(product.salePrice)
       const [createdItem] = await tx.insert(salesOrderItems).values({ orderId: created.id, productId: product.id, sku: product.sku, productName: product.name, quantity: item.quantity, unitPrice: unitPrice.toFixed(2), totalAmount: (unitPrice * item.quantity).toFixed(2) }).$returningId()
       if (!createdItem) throw createError({ statusCode: 500, statusMessage: 'Không thể tạo dòng sản phẩm.' })
-      try {
-        await reserveInventoryFefo(tx, { orderItemId: createdItem.id, productId: product.id, locationId, quantity: item.quantity })
-      } catch (failure) {
-        if ((failure as { statusCode?: number }).statusCode !== 409) throw failure
-        throw createError({ statusCode: 409, statusMessage: `${product.name} không còn đủ số lượng yêu cầu. Vui lòng cập nhật giỏ hàng.` })
-      }
     }
-    await tx.insert(salesOrderStatusHistory).values({ orderId: created.id, status: 'confirmed', note: 'Khách đặt hàng trên website; tồn kho được giữ trong 24 giờ.' })
+    await tx.insert(salesOrderStatusHistory).values({ orderId: created.id, status: 'draft', note: 'Khách đặt hàng trên website; chờ nhân viên xác nhận trước khi giữ tồn kho.' })
         return { reference: orderReference, accessToken, totalAmount: subtotal + shippingFee, duplicated: false }
       })
     } catch (failure) {

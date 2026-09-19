@@ -113,6 +113,12 @@ export const authSessions = mysqlTable('auth_sessions', {
   index('auth_sessions_user_expires_idx').on(table.userId, table.expiresAt),
 ])
 
+export const apiRateLimits = mysqlTable('api_rate_limits', {
+  key: varchar('key', { length: 64 }).primaryKey(),
+  hits: int('hits', { unsigned: true }).default(1).notNull(),
+  expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+}, (table) => [index('api_rate_limits_expires_idx').on(table.expiresAt)])
+
 export const passwordResetTokens = mysqlTable('password_reset_tokens', {
   id: id(),
   userId: bigint('user_id', { mode: 'number', unsigned: true }).notNull().references(() => users.id, { onDelete: 'cascade' }),

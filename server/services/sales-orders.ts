@@ -31,7 +31,7 @@ export async function confirmSalesOrder(orderId: number, performedBy: number) {
       await reserveInventoryFefo(tx, { orderItemId: item.id, productId: item.productId, locationId, quantity: item.quantity })
     }
     const confirmedAt = new Date()
-    await tx.update(salesOrders).set({ status: 'confirmed', confirmedAt, inventoryLocationId: locationId }).where(eq(salesOrders.id, order.id))
+    await tx.update(salesOrders).set({ status: 'confirmed', confirmedAt, reservationExpiresAt: new Date(confirmedAt.getTime() + 24 * 60 * 60 * 1000), inventoryLocationId: locationId }).where(eq(salesOrders.id, order.id))
     await addHistory(tx, order.id, 'confirmed', performedBy, 'Đơn được xác nhận và giữ tồn kho.')
     await tx.insert(auditLogs).values({ userId: performedBy, action: 'sales_order.confirm', entityType: 'sales_order', entityId: String(order.id), oldValues: { status: order.status }, newValues: { status: 'confirmed', inventoryLocationId: locationId } })
     return { id: order.id, reference: order.reference, alreadyConfirmed: false }

@@ -27,6 +27,7 @@
     "@tiptap/starter-kit": "^3.30.5",
     "@tiptap/vue-3": "^3.30.5",
     "@vue-flow/core": "^1.48.2",
+    "busboy": "^1.6.0",
     "drizzle-orm": "^0.45.2",
     "mysql2": "^3.24.2",
     "nuxt": "^4.5.2",
@@ -35,9 +36,10 @@
     "tailwindcss": "^4.1.0",
     "vue": "^3.5.0",
     "vue-router": "^5.2.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@types/busboy": "^1.5.4",
     "@types/sanitize-html": "^2.16.1",
     "drizzle-kit": "^0.31.10",
     "typescript": "^5.9.0",

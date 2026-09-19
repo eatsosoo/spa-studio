@@ -71,6 +71,13 @@
       "when": 1789574400000,
       "tag": "0009_order_management_permission",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1789745725194,
+      "tag": "0010_parched_wiccan",
+      "breakpoints": true
     }
   ]
 }

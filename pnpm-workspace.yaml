@@ -6,3 +6,5 @@ allowBuilds:
   better-sqlite3: false
   esbuild: true
   vue-demi: true
+overrides:
+  '@esbuild-kit/core-utils>esbuild': 0.25.12

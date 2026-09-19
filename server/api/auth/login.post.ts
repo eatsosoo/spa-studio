@@ -1,9 +1,11 @@
 import { createAdminSession, ensureBootstrapAdmin, findLoginUser, getAdminUserById, verifyPassword } from '../../utils/admin-auth'
 import { users } from '../../database/schema'
 import { useDatabase } from '../../database/client'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
+import { checkPublicRateLimit } from '../../utils/public-rate-limit'
 
 export default defineEventHandler(async (event) => {
+  await checkPublicRateLimit(event, 'admin-login', 15, 15 * 60_000)
   const body = await readBody<{ identifier?: string; password?: string; remember?: boolean }>(event)
   const identifier = String(body.identifier ?? '').trim()
   const password = String(body.password ?? '')
@@ -11,12 +13,7 @@ export default defineEventHandler(async (event) => {
 
   await ensureBootstrapAdmin()
   const account = await findLoginUser(identifier)
-  if (account?.lockedUntil && account.lockedUntil > new Date()) throw createError({ statusCode: 423, statusMessage: 'Tài khoản đang tạm khóa. Vui lòng thử lại sau.' })
   if (!account || account.status !== 'active' || !await verifyPassword(password, account.passwordHash)) {
-    if (account) {
-      const attempts = account.failedLoginAttempts + 1
-      await useDatabase().update(users).set({ failedLoginAttempts: sql`${users.failedLoginAttempts} + 1`, lockedUntil: attempts >= 5 ? new Date(Date.now() + 15 * 60_000) : null }).where(eq(users.id, account.id))
-    }
     throw createError({ statusCode: 401, statusMessage: 'Tài khoản hoặc mật khẩu không đúng.' })
   }
 

@@ -54,7 +54,7 @@ const apiGroups = [
     endpoints: [
       ['POST', '/api/booking', 'Tạo yêu cầu đặt lịch và mã tham chiếu.'],
       ['POST', '/api/cart/validate', 'Kiểm tra giá, trạng thái và tồn khả dụng của giỏ.'],
-      ['POST', '/api/orders', 'Tạo đơn idempotent và giữ hàng theo lô trong 24 giờ.'],
+      ['POST', '/api/orders', 'Tạo đơn idempotent; nhân viên xác nhận trước khi giữ hàng theo lô trong 24 giờ.'],
       ['GET', '/api/orders/:reference?token=…', 'Tra cứu đơn bằng mã đơn và access token.'],
     ],
   },
