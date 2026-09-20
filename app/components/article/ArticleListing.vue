@@ -12,23 +12,22 @@ type PostSummary = {
   author: string
 }
 
-const props = withDefaults(defineProps<{ health?: boolean }>(), { health: false })
 const route = useRoute()
 const router = useRouter()
 const search = ref(String(route.query.q || ''))
 const submittedSearch = computed(() => String(route.query.q || ''))
 const page = computed({ get: () => Math.max(1, Math.floor(Number(route.query.page) || 1)), set: value => { router.push({ query: { ...route.query, page: value > 1 ? String(value) : undefined } }) } })
 function searchPosts() { router.push({ query: { q: search.value.trim() || undefined } }) }
-useStoreSeo(props.health ? 'Kinh nghiệm chăm sóc sức khỏe | MIÊN Spa' : 'Bài viết chăm sóc da và cơ thể | MIÊN Spa', props.health ? 'Kinh nghiệm chăm sóc sức khỏe, cơ thể và thói quen nghỉ ngơi tại nhà từ MIÊN. Khám phá các bài viết theo nhu cầu của bạn.' : 'Hướng dẫn chăm sóc da và cơ thể, câu chuyện từ MIÊN cùng các sản phẩm liên quan.', props.health ? '/kinh-nghiem' : '/bai-viet')
+useStoreSeo('Bài viết chăm sóc da và cơ thể | MIÊN Spa', 'Hướng dẫn chăm sóc da và cơ thể, câu chuyện từ MIÊN cùng các sản phẩm liên quan.', '/bai-viet')
 const pageSize = computed({ get: () => [7, 14, 28].includes(Number(route.query.pageSize)) ? Number(route.query.pageSize) : 7, set: value => { router.push({ query: { ...route.query, page: undefined, pageSize: value === 7 ? undefined : String(value) } }) } })
 const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
-useHead(() => ({ link: [{ rel: 'canonical', href: siteUrl + (props.health ? '/kinh-nghiem' : '/bai-viet') + (page.value > 1 ? '?page=' + page.value : '') + (pageSize.value !== 7 ? (page.value > 1 ? '&' : '?') + 'pageSize=' + pageSize.value : '') }] }))
+useHead(() => ({ link: [{ rel: 'canonical', href: siteUrl + '/bai-viet' + (page.value > 1 ? '?page=' + page.value : '') + (pageSize.value !== 7 ? (page.value > 1 ? '&' : '?') + 'pageSize=' + pageSize.value : '') }] }))
 useSeoMeta({ robots: () => submittedSearch.value ? 'noindex, follow' : 'index, follow' })
 const listing = ref<HTMLElement | null>(null)
 const emptyMeta: PaginationMeta = { page: 1, pageSize: 7, total: 0, totalPages: 1, from: 0, to: 0 }
 const { data: response, pending, error, refresh } = await useAsyncData(
-  props.health ? 'health-posts' : 'public-posts',
-  () => $fetch<PaginatedResponse<PostSummary>>('/api/posts', { query: { page: page.value, pageSize: pageSize.value, q: submittedSearch.value, category: props.health ? 'Chăm sóc sức khỏe' : undefined } }),
+  'public-posts',
+  () => $fetch<PaginatedResponse<PostSummary>>('/api/posts', { query: { page: page.value, pageSize: pageSize.value, q: submittedSearch.value } }),
   { watch: [page, pageSize, submittedSearch] },
 )
 const posts = computed(() => response.value?.data ?? [])
@@ -58,15 +57,13 @@ function formatDate(value: string | null) {
   <div class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
     <SiteHeader compact />
     <main>
-      <section class="px-5 pb-16 pt-16 md:px-10 md:pb-24 md:pt-24 lg:px-14">
-        <div class="mx-auto grid max-w-[1400px] gap-12 border-b border-[#78816f]/25 pb-14 lg:grid-cols-[0.42fr_1fr] lg:items-end">
-          <p class="section-label">{{ health ? 'Sống khỏe cùng MIÊN' : 'Ghi chép từ MIÊN' }}</p>
-          <div>
-            <h1 class="max-w-[840px] font-display text-5xl font-light leading-[0.94] tracking-[-0.045em] md:text-7xl"><template v-if="health">Kinh nghiệm<br><span class="italic text-[#66715d]">chăm sóc sức khỏe.</span></template><template v-else>Đọc chậm một chút,<br><span class="italic text-[#66715d]">để hiểu cơ thể hơn.</span></template></h1>
-            <p class="mt-7 max-w-[58ch] text-sm leading-7 text-[#666d62]">Những hướng dẫn có thể thực hành tại nhà, kiến thức chăm sóc vừa đủ và câu chuyện phía sau không gian MIÊN.</p>
-          </div>
-        </div>
-      </section>
+      <SitePageHero
+        eyebrow="Ghi chép từ MIÊN"
+        title="Đọc chậm một chút,"
+        accent-title="để hiểu cơ thể hơn."
+        description="Những hướng dẫn có thể thực hành tại nhà, kiến thức chăm sóc vừa đủ và câu chuyện phía sau không gian MIÊN."
+        :breadcrumbs="[{ label: 'Trang chủ', to: '/' }, { label: 'Bài viết' }]"
+      />
 
       <form class="mx-auto mb-12 grid max-w-[1400px] gap-4 px-5 sm:grid-cols-[1fr_auto] sm:items-end md:px-10" @submit.prevent="searchPosts"><label class="field-block">Tìm bài viết<CommonInput v-model="search" type="search" placeholder="Nhập chủ đề bạn muốn đọc" /></label><button class="button-primary justify-center" type="submit">Tìm bài viết</button></form>
       <section ref="listing" class="scroll-mt-6 px-5 pb-24 md:px-10 md:pb-32 lg:px-14">

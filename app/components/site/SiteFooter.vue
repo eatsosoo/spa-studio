@@ -1,19 +1,41 @@
+<script setup lang="ts">
+import { footerLinkGroups, siteInfo, socialLinks } from '~/data/site'
+
+const { openBooking } = useBookingDrawer()
+</script>
+
 <template>
-  <footer class="px-5 py-14 md:px-10 lg:px-14">
-    <nav aria-label="Khám phá MIÊN" class="mx-auto mb-8 flex max-w-[1400px] flex-wrap gap-x-8 gap-y-4 text-sm"><NuxtLink to="/san-pham" class="text-link">Mua sản phẩm</NuxtLink><NuxtLink to="/bai-viet" class="text-link">Bài viết</NuxtLink><NuxtLink to="/kinh-nghiem" class="text-link">Kinh nghiệm chăm sóc sức khỏe</NuxtLink><NuxtLink to="/?dat-lich=1" class="text-link">Đặt lịch tư vấn</NuxtLink><NuxtLink to="/lich-cua-toi" class="text-link">Lịch của tôi</NuxtLink><NuxtLink to="/tai-khoan" class="text-link">Hồ sơ</NuxtLink></nav>
-    <div class="mx-auto grid max-w-[1400px] gap-10 border-t border-[#77806d]/30 pt-10 md:grid-cols-[1fr_auto_auto] md:items-end md:gap-16">
+  <footer class="border-t border-[#77806d]/25 bg-[#ebe6da] px-5 pb-8 pt-14 md:px-10 md:pt-20 lg:px-14">
+    <div class="mx-auto grid max-w-[1400px] gap-12 lg:grid-cols-[1.05fr_1.4fr] lg:gap-[8vw]">
       <div>
-        <p class="font-display text-5xl font-light tracking-[-0.04em]">MIÊN</p>
-        <p class="mt-3 text-xs text-[#656b61]">Một khoảng lặng cho cơ thể.</p>
+        <NuxtLink to="/" class="font-display text-5xl font-light tracking-[-0.04em]" :aria-label="`${siteInfo.brand}, về trang chủ`">MIÊN</NuxtLink>
+        <p class="mt-4 max-w-sm text-sm leading-7 text-[#62695f]">{{ siteInfo.description }}</p>
+        <div class="mt-7 text-xs leading-6 text-[#596056]">
+          <p>{{ siteInfo.address }}</p>
+          <p>{{ siteInfo.openingHours }}</p>
+          <a :href="siteInfo.phoneHref" class="mt-3 block hover:text-[#2f392a]">{{ siteInfo.phone }}</a>
+          <a :href="siteInfo.emailHref" class="block hover:text-[#2f392a]">{{ siteInfo.email }}</a>
+        </div>
       </div>
-      <div class="text-xs leading-6 text-[#596056]">
-        <p>18 Nguyễn Ư Dĩ, Thảo Điền</p>
-        <p>TP. Hồ Chí Minh</p>
-      </div>
-      <div class="text-xs leading-6 text-[#596056]">
-        <a href="tel:02873028628" class="block hover:text-[#2f392a]">028 7302 8628</a>
-        <a href="mailto:hello@mien-spa.vn" class="block hover:text-[#2f392a]">hello@mien-spa.vn</a>
-      </div>
+
+      <nav class="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3" aria-label="Thông tin cuối trang">
+        <section v-for="group in footerLinkGroups" :key="group.title">
+          <h2 class="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[#727a6d]">{{ group.title }}</h2>
+          <ul class="mt-5 space-y-3 text-sm">
+            <li v-for="link in group.links" :key="link.to ?? link.action">
+              <button v-if="link.action === 'booking'" type="button" class="text-left transition hover:text-[#75816c]" @click="openBooking()">{{ link.label }}</button>
+              <NuxtLink v-else-if="link.to" :to="link.to" class="transition hover:text-[#75816c]">{{ link.label }}</NuxtLink>
+            </li>
+          </ul>
+        </section>
+      </nav>
+    </div>
+
+    <div class="mx-auto mt-14 flex max-w-[1400px] flex-col gap-5 border-t border-[#77806d]/25 pt-7 text-[0.68rem] text-[#687064] sm:flex-row sm:items-center sm:justify-between">
+      <p>{{ siteInfo.copyright }}</p>
+      <nav class="flex flex-wrap gap-5" aria-label="Mạng xã hội">
+        <a v-for="link in socialLinks" :key="link.to" :href="link.to" target="_blank" rel="noreferrer" class="transition hover:text-[#293126]">{{ link.label }}</a>
+      </nav>
     </div>
   </footer>
 </template>

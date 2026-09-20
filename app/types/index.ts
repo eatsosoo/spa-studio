@@ -55,6 +55,97 @@ export type StoreOrder = {
   }>
 }
 
+export type CustomerOrderSummary = {
+  id: number
+  reference: string
+  createdAt: string
+  itemCount: number
+  itemSummary: Array<{ productName: string; quantity: number }>
+  totalAmount: number
+  paymentMethod: string
+  paymentMethodLabel: string
+  paymentStatus: string
+  paymentStatusLabel: string
+  fulfillmentStatus: string
+  fulfillmentStatusLabel: string
+  status: string
+  statusLabel: string
+}
+
+export type CustomerOrderDetail = CustomerOrderSummary & {
+  customerName: string
+  customerPhone: string
+  customerEmail: string | null
+  customerNote: string | null
+  shippingAddressLine: string | null
+  shippingWard: string | null
+  shippingDistrict: string | null
+  shippingProvince: string | null
+  shippingAddress: string
+  subtotal: number
+  discountAmount: number
+  shippingFee: number
+  items: Array<{
+    id: number
+    productId: number | null
+    sku: string
+    productName: string
+    quantity: number
+    unitPrice: number
+    discountAmount: number
+    totalAmount: number
+  }>
+  history: Array<{
+    id: number
+    status: string
+    statusLabel: string
+    note: string | null
+    createdAt: string
+  }>
+}
+
+export type FeedbackType = 'service' | 'product'
+export type FeedbackStatus = 'pending' | 'approved' | 'hidden'
+
+export type CustomerFeedbackEligibility = {
+  type: FeedbackType
+  appointmentId?: number
+  orderId?: number
+  serviceId?: number
+  productId?: number
+  reference: string
+  name: string
+  completedAt: string
+  existingFeedbackId: null
+}
+
+export type CustomerFeedback = {
+  id: number
+  type: FeedbackType
+  rating: number
+  content: string
+  status: FeedbackStatus
+  statusLabel: string
+  subjectName: string
+  reference: string
+  createdAt: string
+}
+
+export type AdminFeedback = CustomerFeedback & {
+  customerId: number
+  customerName: string
+  customerPhone: string
+  customerEmail: string
+  productId: number | null
+  serviceId: number | null
+  appointmentId: number | null
+  orderId: number | null
+  moderationNote: string | null
+  moderatedBy: number | null
+  moderatedAt: string | null
+  updatedAt: string
+}
+
 export type AdminRow = Record<string, string | number>
 
 export type PaginationMeta = {

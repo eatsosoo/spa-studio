@@ -9,6 +9,7 @@ type BookingOptions = { branches: Array<{ id: number; name: string }>; employees
 type Availability = { slots: Array<{ time: string; employeeId: number; employeeName: string }> }
 
 const { customer, loaded, logout } = useCustomerAuth()
+const { openBooking } = useBookingDrawer()
 const { data: meResponse } = await useAsyncData('customer-me', () => $fetch<{ data: CustomerAccount | null }>('/api/customer-auth/me'))
 customer.value = meResponse.value?.data ?? null
 loaded.value = true
@@ -85,7 +86,7 @@ async function submitManage() {
       <template v-if="customer">
         <header class="flex flex-wrap items-end justify-between gap-6 border-b border-[#78816f]/25 pb-8">
           <div><p class="section-label">Lịch của tôi</p><h1 class="mt-3 font-display text-5xl font-light tracking-[-0.04em]">Chào {{ customer.name }}.</h1></div>
-          <div class="flex flex-wrap gap-3"><NuxtLink to="/tai-khoan" class="button-quiet">Hồ sơ</NuxtLink><NuxtLink to="/?dat-lich=1" class="button-primary">Đặt lịch mới</NuxtLink><button type="button" class="button-quiet" @click="signOut">Đăng xuất</button></div>
+          <nav class="flex flex-wrap gap-3" aria-label="Khu vực tài khoản"><NuxtLink to="/tai-khoan" class="button-quiet">Hồ sơ</NuxtLink><NuxtLink to="/don-hang" class="button-quiet">Đơn hàng</NuxtLink><NuxtLink to="/danh-gia" class="button-quiet">Đánh giá</NuxtLink><button type="button" class="button-primary" @click="openBooking()">Đặt lịch mới</button><button type="button" class="button-quiet" @click="signOut">Đăng xuất</button></nav>
         </header>
         <p v-if="successMessage" class="mt-6 border-l-2 border-[#617657] bg-[#e4e8dc] px-4 py-3 text-sm">{{ successMessage }}</p>
 
@@ -105,11 +106,11 @@ async function submitManage() {
               <div class="flex flex-wrap gap-2 md:justify-end"><button v-if="item.canManage" type="button" class="button-quiet" @click="openManage(item, 'reschedule')">Đổi lịch</button><button v-if="item.canManage" type="button" class="px-3 py-2 text-xs font-semibold text-[#8b5148]" @click="openManage(item, 'cancel')">Hủy</button></div>
             </article>
           </div>
-          <div v-else class="mt-6 border border-dashed border-[#78816f]/30 p-8 text-sm text-[#70776c]">Bạn chưa có lịch sắp tới. <NuxtLink to="/?dat-lich=1" class="font-semibold underline">Đặt một khoảng nghỉ</NuxtLink>.</div>
+          <div v-else class="mt-6 border border-dashed border-[#78816f]/30 p-8 text-sm text-[#70776c]">Bạn chưa có lịch sắp tới. <button type="button" class="font-semibold underline" @click="openBooking()">Đặt một khoảng nghỉ</button>.</div>
         </section>
 
         <div class="mt-14 grid gap-10 lg:grid-cols-[1.25fr_0.75fr]">
-          <section><p class="section-label">Đã đồng hành</p><h2 class="mt-3 text-2xl font-semibold">Lịch sử liệu trình</h2><div class="mt-5 divide-y divide-[#78816f]/20 border-y border-[#78816f]/20"><article v-for="item in history" :key="item.id" class="flex flex-wrap items-center justify-between gap-4 py-5"><div><p class="font-semibold">{{ item.service }}</p><p class="mt-1 text-xs text-[#737a70]">{{ formatDate(item.startsAt) }} · {{ item.statusLabel }}</p></div><NuxtLink :to="`/?dat-lich=1&serviceId=${item.serviceId}`" class="text-xs font-semibold underline underline-offset-4">Đặt lại</NuxtLink></article><p v-if="!history.length" class="py-6 text-sm text-[#737a70]">Chưa có lịch sử liệu trình.</p></div></section>
+          <section><p class="section-label">Đã đồng hành</p><h2 class="mt-3 text-2xl font-semibold">Lịch sử liệu trình</h2><div class="mt-5 divide-y divide-[#78816f]/20 border-y border-[#78816f]/20"><article v-for="item in history" :key="item.id" class="flex flex-wrap items-center justify-between gap-4 py-5"><div><p class="font-semibold">{{ item.service }}</p><p class="mt-1 text-xs text-[#737a70]">{{ formatDate(item.startsAt) }} · {{ item.statusLabel }}</p></div><button type="button" class="text-xs font-semibold underline underline-offset-4" @click="openBooking(item.serviceId)">Đặt lại</button></article><p v-if="!history.length" class="py-6 text-sm text-[#737a70]">Chưa có lịch sử liệu trình.</p></div></section>
           <aside class="space-y-8"><section><p class="section-label">Ưu đãi hiện có</p><div class="mt-4 grid gap-3"><article v-for="promo in dashboard?.promotions" :key="promo.id" class="bg-[#dfe4d7] p-5"><p class="font-semibold">{{ promo.name }}</p><p class="mt-2 text-xs leading-5 text-[#687061]">{{ promo.description || 'Ưu đãi được áp dụng theo điều kiện chương trình.' }}</p></article><p v-if="!dashboard?.promotions.length" class="text-sm text-[#737a70]">Chưa có ưu đãi đang diễn ra.</p></div></section><section><p class="section-label">Nhắc lịch</p><div class="mt-4 grid gap-3"><article v-for="notice in dashboard?.notifications.slice(0, 5)" :key="notice.id" class="border-l-2 border-[#708066] pl-4"><p class="text-sm font-semibold">{{ notice.title }}</p><p class="mt-1 text-xs leading-5 text-[#737a70]">{{ notice.message }}</p></article><p v-if="!dashboard?.notifications.length" class="text-sm text-[#737a70]">Thông báo về lịch hẹn sẽ xuất hiện tại đây.</p></div></section></aside>
         </div>
       </template>

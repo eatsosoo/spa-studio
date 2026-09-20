@@ -10,11 +10,15 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 - `/dang-nhap` — trang đăng nhập hoặc đăng ký tài khoản khách hàng bằng số điện thoại và mật khẩu.
 - `/lich-cua-toi` — xem, đổi, hủy hoặc đặt lại lịch; khách chưa đăng nhập được chuyển tới `/dang-nhap`.
 - `/tai-khoan` — cập nhật hồ sơ, xem điểm/hạng thành viên và đổi mật khẩu.
+- `/don-hang` và `/don-hang/:reference` — lịch sử và chi tiết đơn hàng thuộc tài khoản khách hàng.
+- `/danh-gia` — gửi và theo dõi đánh giá cho liệu trình đã hoàn tất hoặc sản phẩm đã nhận.
+- `/lieu-trinh` — danh sách liệu trình từ API, hỗ trợ tìm kiếm, lọc nhóm và chuyển sang đặt lịch.
 - `/san-pham` — danh sách sản phẩm phía khách hàng.
 - `/san-pham/:slug` — chi tiết sản phẩm.
 - `/admin` — tổng quan quản trị.
 - `/admin/khach-hang` — quản lý khách hàng.
 - `/admin/san-pham` — quản lý sản phẩm và tồn kho.
+- `/admin/danh-gia` — tìm kiếm, lọc, duyệt, ẩn hoặc xóa feedback theo phân quyền.
 - `/admin/lieu-trinh` — quản lý liệu trình, thời lượng, giá bán và thời gian đệm.
 - `/admin/kho` — tổng quan tồn, cảnh báo và biểu đồ nhập–xuất; submenu mở chứng từ, lô/hạn dùng, lịch sử, định mức dịch vụ và báo cáo giá vốn.
 - `/admin/dat-lich` — quản lý lịch hẹn.
@@ -57,6 +61,9 @@ Chạy `corepack pnpm db:migrate` trước khi khởi động bản cập nhật
 - `POST /api/booking` ghi yêu cầu đặt lịch từ landing page vào MySQL.
 - `GET /api/booking/options` và `GET /api/booking/availability` trả danh mục cùng khung giờ còn trống theo chi nhánh, liệu trình và nhân viên.
 - `/api/customer-auth/register`, `/login`, `/logout` quản lý tài khoản khách; `/api/customer/profile` và `/api/customer/appointments` phục vụ hồ sơ cùng lịch cá nhân.
+- `GET /api/customer/orders` và `GET /api/customer/orders/:reference` trả đơn hàng theo customer session; đơn guest tiếp tục dùng access token tại `/api/orders/:reference`.
+- `GET /api/customer/feedback/options` và `POST /api/customer/feedback` phục vụ đánh giá hợp lệ của khách hàng.
+- `/api/admin/feedback` cung cấp danh sách, chi tiết, kiểm duyệt và xóa mềm theo các quyền `feedback.read`, `feedback.update`, `feedback.delete`.
 - `POST /api/chat/message` trò chuyện với trợ lý dựa trên dữ liệu đang hoạt động; `POST /api/chat/booking` tạo yêu cầu lịch từ chatbot.
 - `/api/admin/ai-prompt` quản lý phiên bản hướng dẫn AI; `/api/admin/ai-post-jobs` quản lý hàng chờ tạo bài.
 - `/api/admin/chat-leads` quản lý khách và lịch sử hội thoại từ chatbot.
@@ -65,10 +72,12 @@ Chạy `corepack pnpm db:migrate` trước khi khởi động bản cập nhật
 
 Nhóm API `/api/admin` xác thực phiên và kiểm tra quyền riêng cho từng route. Vai trò được gán cho tài khoản tại chi nhánh `MAIN`; danh mục mã quyền được cập nhật bằng migration, còn vai trò tùy chỉnh và quyền gán cho vai trò được quản lý tại `/admin/phan-quyen`.
 
-Sau khi cập nhật mã nguồn, chạy `corepack pnpm db:migrate` để bổ sung quyền `orders.manage` trước khi sử dụng luồng đơn hàng trong bản phân quyền mới.
+Sau khi cập nhật mã nguồn, chạy `corepack pnpm db:migrate` để bổ sung bảng feedback cùng các quyền `feedback.*` và cập nhật quyền `orders.manage` trước khi dùng các luồng mới.
 
 ## Dữ liệu mẫu
 
-Chạy `pnpm db:seed` sau migration để tạo dữ liệu mẫu cho tài khoản quản trị, vai trò, dịch vụ, sản phẩm, tồn kho, khách hàng, nhân viên, lịch hẹn trong ngày và bài viết. Seeder dùng upsert nên có thể chạy lại mà không nhân đôi dữ liệu mẫu.
+Chạy `pnpm db:seed` sau migration để tạo dữ liệu mẫu cho tài khoản quản trị, vai trò, dịch vụ, sản phẩm, tồn kho, khách hàng, nhân viên, lịch hẹn, đơn hàng, lịch sử trạng thái và feedback. Seeder dùng upsert nên có thể chạy lại mà không nhân đôi dữ liệu mẫu.
 
 Seeder tạo một tài khoản `owner` từ nhóm biến `ADMIN_BOOTSTRAP_*` và một tài khoản `manager` từ nhóm `SEED_MANAGER_*`. Nếu không cấu hình mật khẩu khi tạo user mới, seeder sinh mật khẩu ngẫu nhiên mạnh và chỉ in ra terminal một lần. Seeder không ghi đè mật khẩu của tài khoản đã tồn tại.
+
+Hai tài khoản khách mẫu có thể dùng chung mật khẩu từ `SEED_CUSTOMER_PASSWORD`; khi biến này để trống ở môi trường phát triển, seeder dùng mật khẩu mẫu được in ra terminal.

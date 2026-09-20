@@ -22,6 +22,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const pagePermissions: Array<[string, string]> = [
     ['/admin/phan-quyen', 'users.read'], ['/admin/khach-hang', 'customers.read'],
     ['/admin/san-pham', 'products.read'], ['/admin/don-hang', 'orders.read'],
+    ['/admin/danh-gia', 'feedback.read'],
     ['/admin/lieu-trinh', 'services.read'], ['/admin/dat-lich', 'appointments.read'],
     ['/admin/khach-chatbot', 'customers.read'], ['/admin/nhan-vien', 'employees.read'],
     ['/admin/kho', 'inventory.read'], ['/admin/bai-viet', 'posts.read'],

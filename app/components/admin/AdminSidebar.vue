@@ -44,6 +44,7 @@ const primaryItems = [
   { label: "Khách hàng", to: "/admin/khach-hang", icon: "users", permission: "customers.read" },
   { label: "Sản phẩm", to: "/admin/san-pham", icon: "products", permission: "products.read" },
   { label: "Đơn hàng", to: "/admin/don-hang", icon: "cart", permission: "orders.read" },
+  { label: "Đánh giá", to: "/admin/danh-gia", icon: "mail", permission: "feedback.read" },
   { label: "Liệu trình", to: "/admin/lieu-trinh", icon: "services", permission: "services.read" },
 ];
 const items = [

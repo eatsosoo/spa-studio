@@ -46,6 +46,12 @@ export function requiredAdminPermission(path: string, method: string): string | 
     if (verb === 'POST' && ['confirm', 'pay', 'fulfillment', 'cancel'].includes(action ?? '')) return 'orders.manage'
     return null
   }
+  if (section === 'feedback') {
+    if (verb === 'GET') return 'feedback.read'
+    if (verb === 'PATCH') return 'feedback.update'
+    if (verb === 'DELETE') return 'feedback.delete'
+    return null
+  }
   if (section === 'chat-leads') {
     if (verb === 'GET') return 'customers.read'
     if (verb === 'PATCH') return 'customers.update'

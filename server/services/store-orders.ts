@@ -12,11 +12,15 @@ const clean = (value: unknown, max: number) => String(value ?? '').trim().slice(
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 const reference = () => `DH-${Date.now().toString(36).toUpperCase()}-${randomBytes(2).toString('hex').toUpperCase()}`
 
-function orderLabels(order: { status: string; paymentStatus: string; fulfillmentStatus: string }) {
+export function orderLabels(order: { status: string; paymentStatus: string; fulfillmentStatus: string }) {
   const statuses: Record<string, string> = { draft: 'Chờ xác nhận', confirmed: 'Đã xác nhận', paid: 'Đã hoàn tất', cancelled: 'Đã hủy', refunded: 'Đã hoàn tiền' }
   const payments: Record<string, string> = { unpaid: 'Chưa thanh toán', pending: 'Chờ thanh toán', paid: 'Đã thanh toán', failed: 'Thanh toán lỗi', partially_refunded: 'Hoàn tiền một phần', refunded: 'Đã hoàn tiền' }
   const fulfillment: Record<string, string> = { unfulfilled: 'Chờ xử lý', packing: 'Đang đóng gói', shipped: 'Đang giao', delivered: 'Đã giao', returned: 'Đã hoàn hàng' }
   return { statusLabel: statuses[order.status] ?? order.status, paymentStatusLabel: payments[order.paymentStatus] ?? order.paymentStatus, fulfillmentStatusLabel: fulfillment[order.fulfillmentStatus] ?? order.fulfillmentStatus }
+}
+
+export function paymentMethodLabel(method: string) {
+  return method === 'bank_transfer' ? 'Chuyển khoản ngân hàng' : 'Thanh toán khi nhận hàng'
 }
 
 function normalizeItems(value: unknown) {
@@ -32,7 +36,7 @@ function normalizeItems(value: unknown) {
   return [...merged].map(([productId, quantity]) => ({ productId, quantity }))
 }
 
-export async function createStoreOrder(body: Payload) {
+export async function createStoreOrder(body: Payload, authenticatedCustomerId?: number) {
   await releaseExpiredSalesOrders()
   const name = clean(body.customerName, 150)
   const phone = clean(body.customerPhone, 30).replace(/\s/g, '')
@@ -52,9 +56,10 @@ export async function createStoreOrder(body: Payload) {
   if (!/^[a-zA-Z0-9-]{20,80}$/.test(idempotencyKey) || !/^[a-zA-Z0-9-]{20,100}$/.test(accessToken)) throw createError({ statusCode: 422, statusMessage: 'Mã xác nhận đơn không hợp lệ.' })
 
   const db = useDatabase()
-  const existing = await db.select({ reference: salesOrders.reference, accessTokenHash: salesOrders.accessTokenHash, totalAmount: salesOrders.totalAmount }).from(salesOrders).where(eq(salesOrders.idempotencyKey, idempotencyKey)).limit(1)
+  const existing = await db.select({ reference: salesOrders.reference, accessTokenHash: salesOrders.accessTokenHash, totalAmount: salesOrders.totalAmount, customerId: salesOrders.customerId }).from(salesOrders).where(eq(salesOrders.idempotencyKey, idempotencyKey)).limit(1)
   if (existing[0]) {
     if (existing[0].accessTokenHash !== hash(accessToken)) throw createError({ statusCode: 409, statusMessage: 'Mã gửi lại đơn hàng không hợp lệ.' })
+    if (authenticatedCustomerId && existing[0].customerId !== authenticatedCustomerId) throw createError({ statusCode: 409, statusMessage: 'Đơn hàng không thuộc tài khoản hiện tại.' })
     return { reference: existing[0].reference, accessToken, totalAmount: Number(existing[0].totalAmount), duplicated: true }
   }
 
@@ -69,14 +74,22 @@ export async function createStoreOrder(body: Payload) {
     const shippingFee = subtotal >= 1_200_000 ? 0 : 40_000
     const fullAddress = [addressLine, ward, district, province].filter(Boolean).join(', ')
 
-    await tx.insert(customers).values({ code: `KH-${Date.now().toString(36)}-${randomBytes(2).toString('hex')}`.toUpperCase(), fullName: name, phone, email: email || null, address: fullAddress, source: 'website' }).onDuplicateKeyUpdate({ set: { fullName: name, email: email || null, address: fullAddress } })
-    const [customer] = await tx.select({ id: customers.id }).from(customers).where(eq(customers.phone, phone)).limit(1)
+    const customerId = authenticatedCustomerId ?? null
+    if (customerId) {
+      const [authenticatedCustomer] = await tx.select({ id: customers.id }).from(customers).where(and(eq(customers.id, customerId), eq(customers.status, 'active'), isNull(customers.deletedAt))).limit(1)
+      if (!authenticatedCustomer) throw createError({ statusCode: 401, statusMessage: 'Tài khoản khách hàng không còn hoạt động.' })
+    } else {
+      // Guest checkout may still update the CRM contact by phone, but the order is
+      // deliberately not linked to that customer account. Possessing a phone
+      // number is not proof that the guest owns the account.
+      await tx.insert(customers).values({ code: `KH-${Date.now().toString(36)}-${randomBytes(2).toString('hex')}`.toUpperCase(), fullName: name, phone, email: email || null, address: fullAddress, source: 'website' }).onDuplicateKeyUpdate({ set: { fullName: name, email: email || null, address: fullAddress } })
+    }
     const orderReference = reference()
     const [created] = await tx.insert(salesOrders).values({
       reference: orderReference,
       branchId,
       inventoryLocationId: locationId,
-      customerId: customer?.id,
+      customerId,
       source: 'website',
       accessTokenHash: hash(accessToken),
       idempotencyKey,
@@ -112,8 +125,8 @@ export async function createStoreOrder(body: Payload) {
       const code = databaseError.code ?? databaseError.cause?.code
       if (code === 'ER_LOCK_DEADLOCK' && attempt < 2) continue
       if (code === 'ER_DUP_ENTRY') {
-        const [duplicate] = await db.select({ reference: salesOrders.reference, accessTokenHash: salesOrders.accessTokenHash, totalAmount: salesOrders.totalAmount }).from(salesOrders).where(eq(salesOrders.idempotencyKey, idempotencyKey)).limit(1)
-        if (duplicate?.accessTokenHash === hash(accessToken)) return { reference: duplicate.reference, accessToken, totalAmount: Number(duplicate.totalAmount), duplicated: true }
+        const [duplicate] = await db.select({ reference: salesOrders.reference, accessTokenHash: salesOrders.accessTokenHash, totalAmount: salesOrders.totalAmount, customerId: salesOrders.customerId }).from(salesOrders).where(eq(salesOrders.idempotencyKey, idempotencyKey)).limit(1)
+        if (duplicate?.accessTokenHash === hash(accessToken) && (!authenticatedCustomerId || duplicate.customerId === authenticatedCustomerId)) return { reference: duplicate.reference, accessToken, totalAmount: Number(duplicate.totalAmount), duplicated: true }
       }
       throw failure
     }

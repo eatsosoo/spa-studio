@@ -1,1 +1,0 @@
-<template><ArticleListing health /></template>

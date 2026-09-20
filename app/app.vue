@@ -5,6 +5,9 @@ const route = useRoute()
 <template>
   <NuxtLayout>
     <NuxtPage />
-    <SiteChatbot v-if="!route.path.startsWith('/admin')" />
+    <template v-if="!route.path.startsWith('/admin')">
+      <SiteBookingDrawer />
+      <SiteChatbot />
+    </template>
   </NuxtLayout>
 </template>

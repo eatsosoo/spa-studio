@@ -119,11 +119,13 @@ try {
     { category: 'Nghi thức tại nhà', sku: 'MN-BT-045', name: 'Balm Thả Lỏng', slug: 'balm-tha-long', description: 'Sáp thơm dùng cho vùng vai gáy trong nghi thức thư giãn tại nhà.', price: 460000, stock: 0, min: 5, status: 'out_of_stock', size: '45 g', benefits: ['Hỗ trợ thư giãn vùng vai gáy', 'Gọn để mang theo', 'Hương thơm không lưu quá lâu'], ingredients: 'Bơ xoài, sáp cám gạo, dầu gừng và tinh dầu hương thảo.', usage: 'Lấy một lượng nhỏ, làm ấm bằng đầu ngón tay rồi massage theo chuyển động tròn.', position: '88% center' },
     { category: 'Nghi thức tại nhà', sku: 'MN-MT-240', name: 'Muối Ngâm Chân Tĩnh', slug: 'muoi-ngam-chan-tinh', description: 'Hỗn hợp muối khoáng và thảo mộc cho một buổi tối chậm lại.', price: 390000, stock: 9, min: 10, status: 'active', size: '240 g', benefits: ['Làm ấm bàn chân', 'Thư giãn sau ngày dài', 'Hương thảo mộc dịu'], ingredients: 'Muối khoáng, gừng, sả và lá thảo mộc sấy khô.', usage: 'Hòa hai thìa vào nước ấm và ngâm chân trong 15–20 phút.', position: 'center' },
   ]
+  const productIds = {}
   for (const product of productSeeds) {
     const productId = await upsert(
       'INSERT INTO products (category_id, sku, name, slug, short_description, description, size, benefits, ingredients, `usage`, sale_price, status, image_url, image_position) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), category_id = VALUES(category_id), name = VALUES(name), short_description = VALUES(short_description), description = VALUES(description), size = VALUES(size), benefits = VALUES(benefits), ingredients = VALUES(ingredients), `usage` = VALUES(`usage`), sale_price = VALUES(sale_price), status = VALUES(status), image_url = VALUES(image_url), image_position = VALUES(image_position), deleted_at = NULL',
       [productCategoryIds[product.category], product.sku, product.name, product.slug, product.description, product.description, product.size, JSON.stringify(product.benefits), product.ingredients, product.usage, product.price, product.status, '/images/mien-product-collection.png', product.position],
     )
+    productIds[product.sku] = productId
     await connection.execute(
       'INSERT INTO inventory_stocks (product_id, location_id, quantity, min_quantity) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE min_quantity = VALUES(min_quantity)',
       [productId, locationId, product.stock, product.min],
@@ -199,6 +201,23 @@ try {
     )
   }
 
+  const demoCustomerPassword = process.env.SEED_CUSTOMER_PASSWORD || 'MienDemo123'
+  const demoCustomerPasswordHash = await hashPassword(demoCustomerPassword)
+  for (const phone of ['0938427165', '0905174826']) {
+    await connection.execute(
+      `UPDATE customers
+       SET password_hash = COALESCE(password_hash, ?),
+           password_changed_at = COALESCE(password_changed_at, CURRENT_TIMESTAMP),
+           gender = COALESCE(gender, 'female'),
+           date_of_birth = COALESCE(date_of_birth, ?),
+           address = COALESCE(address, ?),
+           loyalty_points = GREATEST(loyalty_points, ?),
+           marketing_consent = true
+       WHERE id = ?`,
+      [demoCustomerPasswordHash, phone === '0938427165' ? '1992-05-18' : '1996-11-03', '18 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội', phone === '0938427165' ? 1280 : 625, customerIds[phone]],
+    )
+  }
+
   const postCategoryIds = {}
   for (const category of [['Chăm sóc tại nhà', 'cham-soc-tai-nha'], ['Hiểu về cơ thể', 'hieu-ve-co-the'], ['Câu chuyện MIÊN', 'cau-chuyen-mien'], ['Chăm sóc sức khỏe', 'cham-soc-suc-khoe']]) {
     postCategoryIds[category[0]] = await upsert(
@@ -236,6 +255,7 @@ try {
     ['SEED-1510', '0917632048', 'DV-NDDA', 'NV-004', '15:10', 'confirmed'],
     ['SEED-1735', '0773916804', 'DV-TLTT', 'NV-001', '17:35', 'pending'],
   ]
+  const appointmentIds = {}
   for (const booking of bookingSeeds) {
     const customer = customerSeeds.find(item => item[2] === booking[1])
     const service = serviceSeeds.find(item => item.code === booking[2])
@@ -245,6 +265,7 @@ try {
       'INSERT INTO appointments (reference, branch_id, customer_id, customer_name, customer_phone, starts_at, ends_at, status, source, subtotal, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), customer_id = VALUES(customer_id), customer_name = VALUES(customer_name), starts_at = VALUES(starts_at), ends_at = VALUES(ends_at), status = VALUES(status), subtotal = VALUES(subtotal), total_amount = VALUES(total_amount)',
       [booking[0], branchId, customerIds[booking[1]], customer[1], booking[1], startsAt, endsAt, booking[5], 'admin', service.price, service.price],
     )
+    appointmentIds[booking[0]] = appointmentId
     const [existingItems] = await connection.execute('SELECT id FROM appointment_services WHERE appointment_id = ? LIMIT 1', [appointmentId])
     if (existingItems.length) {
       await connection.execute('UPDATE appointment_services SET service_id = ?, employee_id = ?, service_name = ?, duration_minutes = ?, unit_price = ?, final_price = ?, status = ? WHERE id = ?', [serviceIds[booking[2]], employeeIds[booking[3]], service.name, service.duration, service.price, service.price, booking[5] === 'completed' ? 'completed' : 'scheduled', existingItems[0].id])
@@ -253,9 +274,149 @@ try {
     }
   }
 
+  const historicalBookingSeeds = [
+    ['SEED-HIST-COMP-001', '0938427165', 'DV-TLTT', 'NV-001', -35, '10:00', 'completed'],
+    ['SEED-HIST-COMP-002', '0905174826', 'DV-PHLD', 'NV-002', -24, '14:30', 'completed'],
+    ['SEED-HIST-CANCEL-001', '0905174826', 'DV-CSDA', 'NV-003', -16, '09:30', 'cancelled'],
+    ['SEED-HIST-NOSHOW-001', '0773916804', 'DV-NDDA', 'NV-004', -9, '16:00', 'no_show'],
+  ]
+  for (const booking of historicalBookingSeeds) {
+    const customer = customerSeeds.find(item => item[2] === booking[1])
+    const service = serviceSeeds.find(item => item.code === booking[2])
+    const date = dateInBangkok(Number(booking[4]))
+    const startsAt = atBangkok(date, booking[5])
+    const endsAt = new Date(startsAt.getTime() + service.duration * 60_000)
+    const status = booking[6]
+    const appointmentId = await upsert(
+      `INSERT INTO appointments (reference, branch_id, customer_id, customer_name, customer_phone, starts_at, ends_at, status, source, subtotal, total_amount, cancellation_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'admin', ?, ?, ?)
+       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), customer_id = VALUES(customer_id), starts_at = VALUES(starts_at), ends_at = VALUES(ends_at), status = VALUES(status), cancellation_reason = VALUES(cancellation_reason)`,
+      [booking[0], branchId, customerIds[booking[1]], customer[1], booking[1], startsAt, endsAt, status, service.price, service.price, status === 'cancelled' ? 'Khách đổi kế hoạch cá nhân.' : null],
+    )
+    appointmentIds[booking[0]] = appointmentId
+    const [existingItems] = await connection.execute('SELECT id FROM appointment_services WHERE appointment_id = ? AND service_id = ? LIMIT 1', [appointmentId, serviceIds[booking[2]]])
+    const itemStatus = status === 'completed' ? 'completed' : status === 'cancelled' ? 'cancelled' : 'scheduled'
+    if (existingItems.length) {
+      await connection.execute('UPDATE appointment_services SET employee_id = ?, service_name = ?, duration_minutes = ?, unit_price = ?, final_price = ?, status = ?, completed_at = ? WHERE id = ?', [employeeIds[booking[3]], service.name, service.duration, service.price, service.price, itemStatus, status === 'completed' ? endsAt : null, existingItems[0].id])
+    } else {
+      await connection.execute('INSERT INTO appointment_services (appointment_id, service_id, employee_id, service_name, duration_minutes, unit_price, final_price, status, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [appointmentId, serviceIds[booking[2]], employeeIds[booking[3]], service.name, service.duration, service.price, service.price, itemStatus, status === 'completed' ? endsAt : null])
+    }
+    await connection.execute(
+      `INSERT INTO appointment_events (appointment_id, customer_id, actor, action, new_values, created_at)
+       SELECT ?, ?, 'system', ?, ?, ?
+       WHERE NOT EXISTS (SELECT 1 FROM appointment_events WHERE appointment_id = ? AND action = ?)`,
+      [appointmentId, customerIds[booking[1]], `seed.${status}`, JSON.stringify({ status }), endsAt, appointmentId, `seed.${status}`],
+    )
+  }
+
+  const orderSeeds = [
+    {
+      reference: 'SEED-DH-DELIVERED-001', phone: '0938427165', createdOffset: -28,
+      status: 'paid', paymentStatus: 'paid', fulfillmentStatus: 'delivered', paymentMethod: 'bank_transfer',
+      items: [['MN-SM-030', 1], ['MN-MC-100', 2]],
+    },
+    {
+      reference: 'SEED-DH-SHIPPED-001', phone: '0938427165', createdOffset: -5,
+      status: 'confirmed', paymentStatus: 'paid', fulfillmentStatus: 'shipped', paymentMethod: 'bank_transfer',
+      items: [['MN-KA-050', 1]],
+    },
+    {
+      reference: 'SEED-DH-DRAFT-001', phone: '0905174826', createdOffset: -2,
+      status: 'draft', paymentStatus: 'unpaid', fulfillmentStatus: 'unfulfilled', paymentMethod: 'cod',
+      items: [['MN-SM-030', 1], ['MN-MT-240', 2]],
+    },
+    {
+      reference: 'SEED-DH-CANCELLED-001', phone: '0773916804', createdOffset: -12,
+      status: 'cancelled', paymentStatus: 'unpaid', fulfillmentStatus: 'unfulfilled', paymentMethod: 'cod',
+      items: [['MN-KA-050', 1]], cancellationReason: 'Khách thay đổi nhu cầu.',
+    },
+    {
+      reference: 'SEED-DH-DELIVERED-002', phone: '0905174826', createdOffset: -40,
+      status: 'paid', paymentStatus: 'paid', fulfillmentStatus: 'delivered', paymentMethod: 'cod',
+      items: [['MN-MT-240', 1]],
+    },
+  ]
+  const orderIds = {}
+  for (const order of orderSeeds) {
+    const customer = customerSeeds.find(item => item[2] === order.phone)
+    const createdAt = atBangkok(dateInBangkok(order.createdOffset), '11:00')
+    const subtotal = order.items.reduce((sum, [sku, quantity]) => sum + productSeeds.find(product => product.sku === sku).price * quantity, 0)
+    const shippingFee = subtotal >= 1_200_000 ? 0 : 40_000
+    const isDelivered = order.fulfillmentStatus === 'delivered'
+    const isCancelled = order.status === 'cancelled'
+    const confirmedAt = order.status === 'draft' || isCancelled ? null : new Date(createdAt.getTime() + 60 * 60_000)
+    const paidAt = order.paymentStatus === 'paid' ? new Date(createdAt.getTime() + 2 * 60 * 60_000) : null
+    const completedAt = isDelivered ? new Date(createdAt.getTime() + 3 * 86_400_000) : null
+    const cancelledAt = isCancelled ? new Date(createdAt.getTime() + 4 * 60 * 60_000) : null
+    const orderId = await upsert(
+      `INSERT INTO sales_orders (
+         reference, branch_id, inventory_location_id, customer_id, source, idempotency_key,
+         customer_name, customer_phone, customer_email, shipping_address_line, shipping_ward, shipping_district, shipping_province,
+         shipping_fee, payment_method, payment_status, fulfillment_status, status, subtotal, discount_amount, total_amount,
+         confirmed_at, paid_at, cancelled_at, completed_at, cancellation_reason, created_at
+       ) VALUES (?, ?, ?, ?, 'website', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), customer_id = VALUES(customer_id), customer_name = VALUES(customer_name), customer_phone = VALUES(customer_phone), customer_email = VALUES(customer_email), shipping_fee = VALUES(shipping_fee), payment_method = VALUES(payment_method), payment_status = VALUES(payment_status), fulfillment_status = VALUES(fulfillment_status), status = VALUES(status), subtotal = VALUES(subtotal), total_amount = VALUES(total_amount), confirmed_at = VALUES(confirmed_at), paid_at = VALUES(paid_at), cancelled_at = VALUES(cancelled_at), completed_at = VALUES(completed_at), cancellation_reason = VALUES(cancellation_reason)`,
+      [order.reference, branchId, locationId, customerIds[order.phone], `seed-${order.reference.toLowerCase()}`, customer[1], order.phone, customer[3], '18 Trần Hưng Đạo', 'Phường Cửa Nam', 'Hoàn Kiếm', 'Hà Nội', shippingFee, order.paymentMethod, order.paymentStatus, order.fulfillmentStatus, order.status, subtotal, subtotal + shippingFee, confirmedAt, paidAt, cancelledAt, completedAt, order.cancellationReason ?? null, createdAt],
+    )
+    orderIds[order.reference] = orderId
+    for (const [sku, quantity] of order.items) {
+      const product = productSeeds.find(item => item.sku === sku)
+      const [existingItems] = await connection.execute('SELECT id FROM sales_order_items WHERE order_id = ? AND product_id = ? LIMIT 1', [orderId, productIds[sku]])
+      const totalAmount = product.price * quantity
+      if (existingItems.length) {
+        await connection.execute('UPDATE sales_order_items SET sku = ?, product_name = ?, quantity = ?, unit_price = ?, discount_amount = 0, total_amount = ? WHERE id = ?', [sku, product.name, quantity, product.price, totalAmount, existingItems[0].id])
+      } else {
+        await connection.execute('INSERT INTO sales_order_items (order_id, product_id, sku, product_name, quantity, unit_price, discount_amount, total_amount) VALUES (?, ?, ?, ?, ?, ?, 0, ?)', [orderId, productIds[sku], sku, product.name, quantity, product.price, totalAmount])
+      }
+    }
+    const historyByState = {
+      draft: ['draft'],
+      confirmed: order.fulfillmentStatus === 'shipped' ? ['draft', 'confirmed', 'packing', 'shipped'] : ['draft', 'confirmed'],
+      paid: ['draft', 'confirmed', 'packing', 'shipped', 'completed'],
+      cancelled: ['draft', 'cancelled'],
+    }
+    for (const [index, status] of historyByState[order.status].entries()) {
+      const note = `Dữ liệu mẫu: ${status}`
+      await connection.execute(
+        `INSERT INTO sales_order_status_history (order_id, status, note, created_at)
+         SELECT ?, ?, ?, ?
+         WHERE NOT EXISTS (SELECT 1 FROM sales_order_status_history WHERE order_id = ? AND status = ? AND note = ?)`,
+        [orderId, status, note, new Date(createdAt.getTime() + index * 60 * 60_000), orderId, status, note],
+      )
+    }
+  }
+
+  const feedbackSeeds = [
+    {
+      customerId: customerIds['0938427165'], type: 'service', appointmentId: appointmentIds['SEED-HIST-COMP-001'], serviceId: serviceIds['DV-TLTT'],
+      rating: 5, content: 'Không gian rất yên và kỹ thuật viên chăm sóc chu đáo. Tôi cảm thấy cơ thể nhẹ hơn sau buổi trị liệu.', status: 'approved', note: 'Nội dung phù hợp.',
+    },
+    {
+      customerId: customerIds['0938427165'], type: 'product', orderId: orderIds['SEED-DH-DELIVERED-001'], productId: productIds['MN-SM-030'],
+      rating: 4, content: 'Serum thấm nhanh, dùng buổi tối dễ chịu và không gây cảm giác bí da.', status: 'pending', note: null,
+    },
+    {
+      customerId: customerIds['0905174826'], type: 'service', appointmentId: appointmentIds['SEED-HIST-COMP-002'], serviceId: serviceIds['DV-PHLD'],
+      rating: 3, content: 'Liệu trình ổn nhưng nội dung cũ cần được nhân viên kiểm tra lại trước khi hiển thị.', status: 'hidden', note: 'Tạm ẩn để liên hệ khách xác minh.',
+    },
+    {
+      customerId: customerIds['0905174826'], type: 'product', orderId: orderIds['SEED-DH-DELIVERED-002'], productId: productIds['MN-MT-240'],
+      rating: 5, content: 'Mùi thảo mộc dịu, gói sản phẩm cẩn thận và hướng dẫn sử dụng rõ ràng.', status: 'approved', note: 'Nội dung phù hợp.',
+    },
+  ]
+  for (const feedback of feedbackSeeds) {
+    await upsert(
+      `INSERT INTO feedbacks (customer_id, product_id, service_id, appointment_id, order_id, subject_type, rating, content, status, moderation_note, moderated_by, moderated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), rating = VALUES(rating), content = VALUES(content), status = VALUES(status), moderation_note = VALUES(moderation_note), moderated_by = VALUES(moderated_by), moderated_at = VALUES(moderated_at), deleted_at = NULL`,
+      [feedback.customerId, feedback.productId ?? null, feedback.serviceId ?? null, feedback.appointmentId ?? null, feedback.orderId ?? null, feedback.type, feedback.rating, feedback.content, feedback.status, feedback.note, feedback.status === 'pending' ? null : ownerUser.id, feedback.status === 'pending' ? null : new Date()],
+    )
+  }
+
   await connection.commit()
   console.log('Đã seed dữ liệu mẫu MIÊN Spa thành công.')
   console.log(`Lịch hẹn mẫu được tạo cho ngày ${today}.`)
+  console.log(`Tài khoản khách mẫu: 0938427165 / ${process.env.SEED_CUSTOMER_PASSWORD ? 'mật khẩu từ SEED_CUSTOMER_PASSWORD' : demoCustomerPassword}`)
   if (generatedCredentials.length) {
     console.log('Tài khoản mới dùng mật khẩu sinh ngẫu nhiên (chỉ hiển thị lần này):')
     for (const credential of generatedCredentials) console.log(`- ${credential.username}: ${credential.password}`)

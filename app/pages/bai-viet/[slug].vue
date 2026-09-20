@@ -22,6 +22,7 @@ type PostDetail = {
 
 const route = useRoute()
 const copied = ref(false)
+const { openBooking } = useBookingDrawer()
 const { data: response, error: fetchError } = await useAsyncData(`post-${route.params.slug}`, () => $fetch<{ data: PostDetail }>(`/api/posts/${route.params.slug}`))
 if (!response.value?.data) throw createError({ statusCode: fetchError.value?.statusCode || 404, statusMessage: fetchError.value?.statusCode === 404 ? 'Không tìm thấy bài viết.' : 'Chưa thể tải bài viết. Vui lòng thử lại.' })
 const post = computed(() => response.value!.data)
@@ -94,8 +95,8 @@ useHead(() => ({
         <div v-if="post.featuredImage" class="mx-auto max-w-[1600px] px-0 md:px-10 lg:px-14"><img :src="post.featuredImage" :alt="post.title" class="max-h-[760px] w-full object-cover"></div>
 
         <div class="mx-auto grid max-w-[1400px] gap-12 px-5 py-16 md:px-10 md:py-24 lg:grid-cols-[150px_minmax(0,720px)_minmax(230px,300px)] lg:gap-[5vw] lg:px-14">
-          <aside class="self-start border-t border-[#78816f]/25 pt-5 text-xs leading-6 lg:sticky lg:top-8"><nav v-if="reading.headings.length" aria-label="Mục lục bài viết"><p class="section-label">Trong bài viết</p><a v-for="heading in reading.headings" :key="heading.id" :href="'#' + heading.id" class="mt-3 block hover:underline" :class="heading.level === 3 ? 'pl-3' : 'font-semibold'">{{ heading.title }}</a></nav><NuxtLink to="/kinh-nghiem" class="text-link mt-6 block">Kinh nghiệm sức khỏe</NuxtLink></aside>
-          <div class="min-w-0"><ArticleBody :content="reading.html" /><div class="mt-12 border-t border-[#78816f]/25 pt-8"><p class="section-label">Bước chăm sóc tiếp theo</p><h2 class="mt-3 font-display text-3xl">Chọn điều phù hợp với bạn.</h2><div class="mt-5 flex flex-wrap gap-3"><NuxtLink to="/san-pham" class="button-primary">Xem sản phẩm chăm sóc</NuxtLink><NuxtLink to="/?dat-lich=1" class="button-quiet">Đặt lịch tư vấn</NuxtLink></div></div></div>
+          <aside class="self-start border-t border-[#78816f]/25 pt-5 text-xs leading-6 lg:sticky lg:top-8"><nav v-if="reading.headings.length" aria-label="Mục lục bài viết"><p class="section-label">Trong bài viết</p><a v-for="heading in reading.headings" :key="heading.id" :href="'#' + heading.id" class="mt-3 block hover:underline" :class="heading.level === 3 ? 'pl-3' : 'font-semibold'">{{ heading.title }}</a></nav><NuxtLink to="/bai-viet" class="text-link mt-6 block">Tất cả bài viết</NuxtLink></aside>
+          <div class="min-w-0"><ArticleBody :content="reading.html" /><div class="mt-12 border-t border-[#78816f]/25 pt-8"><p class="section-label">Bước chăm sóc tiếp theo</p><h2 class="mt-3 font-display text-3xl">Chọn điều phù hợp với bạn.</h2><div class="mt-5 flex flex-wrap gap-3"><NuxtLink to="/san-pham" class="button-primary">Xem sản phẩm chăm sóc</NuxtLink><button type="button" class="button-quiet" @click="openBooking()">Đặt lịch tư vấn</button></div></div></div>
           <ArticleRelatedProducts :products="post.relatedProducts" :source="post.relatedProductsSource" />
         </div>
       </article>

@@ -11,6 +11,7 @@ const activeCategory = ref('Tất cả')
 const search = ref('')
 const sort = ref('name')
 const inStock = ref(false)
+const { openBooking } = useBookingDrawer()
 const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd')
 const visibleProducts = computed(() => products.value.filter(product =>
   (activeCategory.value === 'Tất cả' || product.category === activeCategory.value)
@@ -25,17 +26,13 @@ useStoreSeo('Sản phẩm chăm sóc da và cơ thể | MIÊN Spa', 'Tìm sản 
   <div class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
     <SiteHeader compact />
     <main>
-      <section class="px-5 pb-20 pt-16 md:px-10 md:pb-28 md:pt-24 lg:px-14">
-        <div class="mx-auto grid max-w-[1400px] gap-12 border-b border-[#78816f]/25 pb-16 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
-          <p class="section-label">Nghi thức tại nhà</p>
-          <div>
-            <h1 class="max-w-[900px] font-display text-[clamp(2.7rem,5vw,5rem)] font-light leading-[0.88] tracking-[-0.055em]">
-              Chăm sóc tiếp,<br><span class="italic text-[#66715d]">sau khi rời MIÊN.</span>
-            </h1>
-            <p class="mt-9 max-w-[55ch] text-sm leading-7 text-[#62695f]">Những công thức dịu, ít mùi hương và vừa đủ để bạn giữ lại cảm giác thư thái trong những ngày ở nhà.</p>
-          </div>
-        </div>
-      </section>
+      <SitePageHero
+        eyebrow="Nghi thức tại nhà"
+        title="Chăm sóc tiếp,"
+        accent-title="sau khi rời MIÊN."
+        description="Những công thức dịu, ít mùi hương và vừa đủ để bạn giữ lại cảm giác thư thái trong những ngày ở nhà."
+        :breadcrumbs="[{ label: 'Trang chủ', to: '/' }, { label: 'Sản phẩm' }]"
+      />
 
       <section class="px-5 pb-28 md:px-10 md:pb-36 lg:px-14">
         <div class="mx-auto max-w-[1400px]">
@@ -65,7 +62,7 @@ useStoreSeo('Sản phẩm chăm sóc da và cơ thể | MIÊN Spa', 'Tìm sản 
           <h2 class="max-w-[760px] font-display text-5xl font-light leading-[0.95] tracking-[-0.04em] md:text-7xl">Chưa biết làn da đang cần gì?</h2>
           <div>
             <p class="max-w-[44ch] text-sm leading-7 text-[#cdd4c8]">Ghé MIÊN để được quan sát da và chọn một chu trình ngắn, không mua thừa những bước không cần thiết.</p>
-            <NuxtLink to="/?dat-lich=1" class="mt-7 inline-flex items-center gap-4 rounded-full border border-[#dbe1d5]/35 px-5 py-3.5 text-xs font-semibold transition hover:bg-[#f0ece2] hover:text-[#34412f] active:scale-[0.98]">Đặt lịch tư vấn <AppIcon name="arrow" :size="16" /></NuxtLink>
+            <button type="button" class="mt-7 inline-flex items-center gap-4 rounded-full border border-[#dbe1d5]/35 px-5 py-3.5 text-xs font-semibold transition hover:bg-[#f0ece2] hover:text-[#34412f] active:scale-[0.98]" @click="openBooking()">Đặt lịch tư vấn <AppIcon name="arrow" :size="16" /></button>
           </div>
         </div>
       </section>

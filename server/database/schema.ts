@@ -693,6 +693,30 @@ export const salesOrderStatusHistory = mysqlTable('sales_order_status_history', 
   createdAt: createdAt(),
 }, (table) => [index('sales_order_status_history_order_idx').on(table.orderId, table.createdAt)])
 
+export const feedbacks = mysqlTable('feedbacks', {
+  id: id(),
+  customerId: bigint('customer_id', { mode: 'number', unsigned: true }).notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  productId: bigint('product_id', { mode: 'number', unsigned: true }).references(() => products.id, { onDelete: 'set null' }),
+  serviceId: bigint('service_id', { mode: 'number', unsigned: true }).references(() => services.id, { onDelete: 'set null' }),
+  appointmentId: bigint('appointment_id', { mode: 'number', unsigned: true }).references(() => appointments.id, { onDelete: 'set null' }),
+  orderId: bigint('order_id', { mode: 'number', unsigned: true }).references(() => salesOrders.id, { onDelete: 'set null' }),
+  subjectType: mysqlEnum('subject_type', ['product', 'service']).notNull(),
+  rating: int('rating', { unsigned: true }).notNull(),
+  content: text('content').notNull(),
+  status: mysqlEnum('status', ['pending', 'approved', 'hidden']).default('pending').notNull(),
+  moderationNote: varchar('moderation_note', { length: 500 }),
+  moderatedBy: bigint('moderated_by', { mode: 'number', unsigned: true }).references(() => users.id, { onDelete: 'set null' }),
+  moderatedAt: timestamp('moderated_at', { mode: 'date' }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+  deletedAt: timestamp('deleted_at', { mode: 'date' }),
+}, (table) => [
+  uniqueIndex('feedbacks_customer_appointment_service_unique').on(table.customerId, table.appointmentId, table.serviceId),
+  uniqueIndex('feedbacks_customer_order_product_unique').on(table.customerId, table.orderId, table.productId),
+  index('feedbacks_status_created_idx').on(table.status, table.createdAt),
+  index('feedbacks_customer_created_idx').on(table.customerId, table.createdAt),
+])
+
 export const couponRedemptions = mysqlTable('coupon_redemptions', {
   id: id(),
   couponId: bigint('coupon_id', { mode: 'number', unsigned: true }).notNull().references(() => coupons.id),
