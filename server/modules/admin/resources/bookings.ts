@@ -1,8 +1,10 @@
-import { and, asc, desc, eq, gte, isNull, like, lt, ne } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, isNull, like, lt, ne, sql } from 'drizzle-orm'
 import { useDatabase } from '../../../database/client'
 import {
   appointmentServices,
+  appointmentEvents,
   appointments,
+  customerNotifications,
   customers,
   employees,
   inventoryLocations,
@@ -10,6 +12,7 @@ import {
   serviceProductUsages,
 } from '../../../database/schema'
 import { consumeInventoryFefo } from '../../../services/inventory'
+import { assertEmployeeAvailable } from '../../../services/customer-bookings'
 import { defaultBranch } from '../default-branch'
 import { dateInput, insertedId, reverseStatus, slugify, statusValue, textValue, timeInput, type AdminResource } from '../shared'
 
@@ -89,6 +92,8 @@ async function saveBooking(id: number | null, body: Record<string, unknown>) {
   let reference = ''
   await db.transaction(async tx => {
     let appointmentId = id
+    const [previousAppointment] = appointmentId ? await tx.select({ status: appointments.status, customerId: appointments.customerId, startsAt: appointments.startsAt }).from(appointments).where(eq(appointments.id, appointmentId)).limit(1).for('update') : []
+    if (employee?.id && appointmentValues.status !== 'cancelled') await assertEmployeeAvailable(tx, { employeeId: employee.id, start, end: new Date(end.getTime() + service.bufferMinutes * 60_000), excludeAppointmentId: appointmentId ?? undefined })
     if (appointmentId) await tx.update(appointments).set(appointmentValues).where(eq(appointments.id, appointmentId))
     else {
       reference = `LH-${Date.now().toString(36)}`.toUpperCase()
@@ -105,6 +110,15 @@ async function saveBooking(id: number | null, body: Record<string, unknown>) {
     } else {
       const [createdLine] = await tx.insert(appointmentServices).values({ appointmentId: appointmentId!, serviceId: service.id, employeeId: employee?.id, serviceName: service.name, durationMinutes: service.durationMinutes, unitPrice: service.price, finalPrice: service.price, status: lineStatus, completedAt: lineStatus === 'completed' ? new Date() : null }).$returningId()
       appointmentServiceId = insertedId(createdLine)
+    }
+    if (lineStatus === 'completed' && previousAppointment?.status !== 'completed' && appointmentValues.customerId) {
+      const earnedPoints = Math.max(0, Math.floor(Number(service.price) / 10_000))
+      await tx.update(customers).set({ totalSpent: sql`${customers.totalSpent} + ${service.price}`, loyaltyPoints: sql`${customers.loyaltyPoints} + ${earnedPoints}` }).where(eq(customers.id, appointmentValues.customerId))
+    }
+    if (previousAppointment && appointmentValues.customerId && (previousAppointment.status !== appointmentValues.status || previousAppointment.startsAt.getTime() !== start.getTime())) {
+      await tx.insert(appointmentEvents).values({ appointmentId: appointmentId!, customerId: appointmentValues.customerId, actor: 'staff', action: previousAppointment.status !== appointmentValues.status ? 'status_updated' : 'rescheduled', oldValues: { status: previousAppointment.status, startsAt: previousAppointment.startsAt.toISOString() }, newValues: { status: appointmentValues.status, startsAt: start.toISOString() } })
+      const statusLabel = reverseStatus(bookingStatuses, appointmentValues.status)
+      await tx.insert(customerNotifications).values({ customerId: appointmentValues.customerId, appointmentId: appointmentId!, type: appointmentValues.status === 'cancelled' ? 'booking_cancelled' : 'booking_updated', channel: 'in_app', title: appointmentValues.status === 'confirmed' ? 'Lịch hẹn đã được xác nhận' : 'Lịch hẹn vừa được cập nhật', message: `${service.name} lúc ${timeInput(start)}, ngày ${dateInput(start)} · ${statusLabel}.`, scheduledAt: new Date(), sentAt: new Date() })
     }
     if (lineStatus === 'completed' && !existingLine?.inventoryDeductedAt) {
       const [location] = await tx.select({ id: inventoryLocations.id }).from(inventoryLocations).where(and(eq(inventoryLocations.branchId, appointmentValues.branchId), eq(inventoryLocations.isActive, true))).orderBy(inventoryLocations.id).limit(1)

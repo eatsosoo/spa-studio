@@ -175,6 +175,8 @@ export const customers = mysqlTable('customers', {
   code: varchar('code', { length: 30 }).notNull(),
   fullName: varchar('full_name', { length: 150 }).notNull(),
   phone: varchar('phone', { length: 30 }).notNull(),
+  passwordHash: varchar('password_hash', { length: 255 }),
+  passwordChangedAt: timestamp('password_changed_at', { mode: 'date' }),
   email: varchar('email', { length: 190 }),
   gender: mysqlEnum('gender', ['female', 'male', 'other']),
   dateOfBirth: date('date_of_birth', { mode: 'string' }),
@@ -192,6 +194,32 @@ export const customers = mysqlTable('customers', {
   uniqueIndex('customers_code_unique').on(table.code),
   uniqueIndex('customers_phone_unique').on(table.phone),
   index('customers_name_idx').on(table.fullName),
+])
+
+export const customerAuthChallenges = mysqlTable('customer_auth_challenges', {
+  id: id(),
+  phone: varchar('phone', { length: 30 }).notNull(),
+  customerName: varchar('customer_name', { length: 150 }),
+  codeHash: varchar('code_hash', { length: 64 }).notNull(),
+  expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+  attempts: int('attempts', { unsigned: true }).default(0).notNull(),
+  consumedAt: timestamp('consumed_at', { mode: 'date' }),
+  createdAt: createdAt(),
+}, (table) => [index('customer_auth_challenges_phone_created_idx').on(table.phone, table.createdAt)])
+
+export const customerSessions = mysqlTable('customer_sessions', {
+  id: id(),
+  customerId: bigint('customer_id', { mode: 'number', unsigned: true }).notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: varchar('user_agent', { length: 500 }),
+  expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+  lastSeenAt: timestamp('last_seen_at', { mode: 'date' }).defaultNow().notNull(),
+  revokedAt: timestamp('revoked_at', { mode: 'date' }),
+  createdAt: createdAt(),
+}, (table) => [
+  uniqueIndex('customer_sessions_token_hash_unique').on(table.tokenHash),
+  index('customer_sessions_customer_expires_idx').on(table.customerId, table.expiresAt),
 ])
 
 export const serviceCategories = mysqlTable('service_categories', {
@@ -498,6 +526,34 @@ export const appointmentServices = mysqlTable('appointment_services', {
 }, (table) => [
   index('appointment_services_appointment_idx').on(table.appointmentId),
   index('appointment_services_employee_idx').on(table.employeeId),
+])
+
+export const appointmentEvents = mysqlTable('appointment_events', {
+  id: id(),
+  appointmentId: bigint('appointment_id', { mode: 'number', unsigned: true }).notNull().references(() => appointments.id, { onDelete: 'cascade' }),
+  customerId: bigint('customer_id', { mode: 'number', unsigned: true }).references(() => customers.id, { onDelete: 'set null' }),
+  actor: mysqlEnum('actor', ['customer', 'staff', 'system']).notNull(),
+  action: varchar('action', { length: 80 }).notNull(),
+  oldValues: json('old_values'),
+  newValues: json('new_values'),
+  createdAt: createdAt(),
+}, (table) => [index('appointment_events_appointment_created_idx').on(table.appointmentId, table.createdAt)])
+
+export const customerNotifications = mysqlTable('customer_notifications', {
+  id: id(),
+  customerId: bigint('customer_id', { mode: 'number', unsigned: true }).notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  appointmentId: bigint('appointment_id', { mode: 'number', unsigned: true }).references(() => appointments.id, { onDelete: 'cascade' }),
+  type: mysqlEnum('type', ['booking_created', 'booking_updated', 'booking_cancelled', 'reminder']).notNull(),
+  channel: mysqlEnum('channel', ['in_app', 'sms']).default('in_app').notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  message: varchar('message', { length: 500 }).notNull(),
+  scheduledAt: timestamp('scheduled_at', { mode: 'date' }).defaultNow().notNull(),
+  sentAt: timestamp('sent_at', { mode: 'date' }),
+  readAt: timestamp('read_at', { mode: 'date' }),
+  createdAt: createdAt(),
+}, (table) => [
+  index('customer_notifications_customer_schedule_idx').on(table.customerId, table.scheduledAt),
+  index('customer_notifications_pending_idx').on(table.channel, table.sentAt, table.scheduledAt),
 ])
 
 export const attendanceRecords = mysqlTable('attendance_records', {

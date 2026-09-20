@@ -7,6 +7,9 @@ Backend database dùng MySQL 8 và Drizzle ORM. Xem [thiết kế database](./do
 ## Các trang chính
 
 - `/` — landing page và form đặt lịch.
+- `/dang-nhap` — trang đăng nhập hoặc đăng ký tài khoản khách hàng bằng số điện thoại và mật khẩu.
+- `/lich-cua-toi` — xem, đổi, hủy hoặc đặt lại lịch; khách chưa đăng nhập được chuyển tới `/dang-nhap`.
+- `/tai-khoan` — cập nhật hồ sơ, xem điểm/hạng thành viên và đổi mật khẩu.
 - `/san-pham` — danh sách sản phẩm phía khách hàng.
 - `/san-pham/:slug` — chi tiết sản phẩm.
 - `/admin` — tổng quan quản trị.
@@ -52,6 +55,8 @@ Chạy `corepack pnpm db:migrate` trước khi khởi động bản cập nhật
 - `GET /api/admin/inventory/recipes` và `PUT /api/admin/inventory/recipes/:serviceId` quản lý định mức vật tư dịch vụ.
 - Các action `/api/admin/orders/:id/confirm`, `/pay`, `/cancel` lần lượt giữ hàng FEFO, tiêu thụ phần đã giữ và giải phóng giữ hàng.
 - `POST /api/booking` ghi yêu cầu đặt lịch từ landing page vào MySQL.
+- `GET /api/booking/options` và `GET /api/booking/availability` trả danh mục cùng khung giờ còn trống theo chi nhánh, liệu trình và nhân viên.
+- `/api/customer-auth/register`, `/login`, `/logout` quản lý tài khoản khách; `/api/customer/profile` và `/api/customer/appointments` phục vụ hồ sơ cùng lịch cá nhân.
 - `POST /api/chat/message` trò chuyện với trợ lý dựa trên dữ liệu đang hoạt động; `POST /api/chat/booking` tạo yêu cầu lịch từ chatbot.
 - `/api/admin/ai-prompt` quản lý phiên bản hướng dẫn AI; `/api/admin/ai-post-jobs` quản lý hàng chờ tạo bài.
 - `/api/admin/chat-leads` quản lý khách và lịch sử hội thoại từ chatbot.

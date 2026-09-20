@@ -27,6 +27,9 @@ const { count } = useCart()
         <slot name="action">
           <div class="hidden sm:block"><NuxtLink to="/?dat-lich=1" class="button-quiet">Đặt một khoảng nghỉ</NuxtLink></div>
         </slot>
+        <NuxtLink to="/tai-khoan" class="relative grid size-10 place-items-center rounded-full border border-[#596650]/35 text-[#3f493a] transition hover:bg-[#e5e0d5] active:scale-[0.98]" aria-label="Mở tài khoản của tôi">
+          <AppIcon name="profile" :size="18" />
+        </NuxtLink>
         <NuxtLink to="/gio-hang" class="relative grid size-10 place-items-center rounded-full border border-[#596650]/35 text-[#3f493a] transition hover:bg-[#e5e0d5] active:scale-[0.98]" aria-label="Mở giỏ hàng">
           <AppIcon name="cart" :size="18" />
           <span v-if="count" class="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#4c5d43] px-1 text-[0.6rem] font-semibold text-[#f7f2e8]">{{ count > 99 ? '99+' : count }}</span>
@@ -42,6 +45,8 @@ const { count } = useCart()
         <NuxtLink to="/#lieu-trinh" class="mobile-nav-link" @click="isMenuOpen = false">Liệu trình</NuxtLink>
         <NuxtLink to="/san-pham" class="mobile-nav-link" @click="isMenuOpen = false">Sản phẩm</NuxtLink>
         <NuxtLink to="/gio-hang" class="mobile-nav-link" @click="isMenuOpen = false">Giỏ hàng ({{ count }})</NuxtLink>
+        <NuxtLink to="/lich-cua-toi" class="mobile-nav-link" @click="isMenuOpen = false">Lịch của tôi</NuxtLink>
+        <NuxtLink to="/tai-khoan" class="mobile-nav-link" @click="isMenuOpen = false">Hồ sơ tài khoản</NuxtLink>
         <NuxtLink to="/bai-viet" class="mobile-nav-link" @click="isMenuOpen = false">Bài viết</NuxtLink>
         <NuxtLink to="/#khong-gian" class="mobile-nav-link" @click="isMenuOpen = false">Không gian</NuxtLink>
         <NuxtLink to="/kinh-nghiem" class="mobile-nav-link" @click="isMenuOpen = false">Kinh nghiệm chăm sóc sức khỏe</NuxtLink>

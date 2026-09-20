@@ -6,6 +6,13 @@ type BookingResponse = {
   message: string
 }
 
+type BookingOptions = {
+  branches: Array<{ id: number; name: string; address: string | null }>
+  services: Array<{ id: number; name: string; durationMinutes: number; bufferMinutes: number; price: number }>
+  employees: Array<{ id: number; branchId: number; name: string; role: string | null }>
+}
+type Availability = { date: string; durationMinutes: number; bufferMinutes: number; slots: Array<{ time: string; employeeId: number; employeeName: string }> }
+
 type HomePost = {
   id: number
   slug: string
@@ -55,14 +62,26 @@ const errors = reactive<Record<string, string>>({})
 const form = reactive({
   name: '',
   phone: '',
-  service: '',
+  branchId: '',
+  serviceId: '',
+  employeePreference: '',
+  employeeId: '',
   date: '',
+  time: '',
   note: '',
 })
 
-const today = new Date().toISOString().slice(0, 10)
+const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' })
 const route = useRoute()
 const { data: postResponse } = await useAsyncData('home-posts', () => $fetch<{ data: HomePost[] }>('/api/posts', { query: { page: 1, pageSize: 3 } }))
+const { data: bookingOptionsResponse } = await useAsyncData('public-booking-options', () => $fetch<{ data: BookingOptions }>('/api/booking/options'))
+const bookingOptions = computed(() => bookingOptionsResponse.value?.data ?? { branches: [], services: [], employees: [] })
+const selectedService = computed(() => bookingOptions.value.services.find(item => item.id === Number(form.serviceId)))
+const availableEmployees = computed(() => bookingOptions.value.employees.filter(item => item.branchId === Number(form.branchId)))
+const availability = ref<Availability | null>(null)
+const availabilityBusy = ref(false)
+let availabilityRequest = 0
+const { customer, load: loadCustomer } = useCustomerAuth()
 const latestPosts = computed(() => postResponse.value?.data ?? [])
 
 function formatPostDate(value: string | null) {
@@ -71,7 +90,10 @@ function formatPostDate(value: string | null) {
 }
 
 function openBooking(service = '') {
-  form.service = service
+  const matchingService = bookingOptions.value.services.find(item => item.name === service || String(item.id) === service)
+  if (matchingService) form.serviceId = String(matchingService.id)
+  if (!form.branchId && bookingOptions.value.branches[0]) form.branchId = String(bookingOptions.value.branches[0].id)
+  if (customer.value) { form.name = customer.value.name; form.phone = customer.value.phone }
   bookingResult.value = null
   submitError.value = ''
   isBookingOpen.value = true
@@ -87,8 +109,10 @@ function validate() {
 
   if (!form.name.trim()) errors.name = 'Vui lòng cho MIÊN biết tên của bạn.'
   if (!/^(\+84|0)\d{9}$/.test(phone)) errors.phone = 'Số điện thoại chưa đúng định dạng.'
-  if (!form.service) errors.service = 'Vui lòng chọn một liệu trình.'
+  if (!form.branchId) errors.branchId = 'Vui lòng chọn chi nhánh.'
+  if (!form.serviceId) errors.serviceId = 'Vui lòng chọn một liệu trình.'
   if (!form.date) errors.date = 'Vui lòng chọn ngày bạn muốn ghé.'
+  if (!form.time || !form.employeeId) errors.time = 'Vui lòng chọn một khung giờ còn trống.'
 
   return Object.keys(errors).length === 0
 }
@@ -102,7 +126,7 @@ async function submitBooking() {
   try {
     bookingResult.value = await $fetch<BookingResponse>('/api/booking', {
       method: 'POST',
-      body: form,
+      body: { name: form.name, phone: form.phone, branchId: Number(form.branchId), serviceId: Number(form.serviceId), employeeId: Number(form.employeeId), date: form.date, time: form.time, note: form.note },
     })
   } catch {
     submitError.value = 'Chưa thể gửi yêu cầu lúc này. Bạn vui lòng thử lại sau ít phút.'
@@ -110,6 +134,28 @@ async function submitBooking() {
     isSubmitting.value = false
   }
 }
+
+async function loadAvailability() {
+  availability.value = null
+  form.time = ''
+  form.employeeId = ''
+  if (!form.branchId || !form.serviceId || !form.date) return
+  const request = ++availabilityRequest
+  availabilityBusy.value = true
+  try {
+    const response = await $fetch<{ data: Availability }>('/api/booking/availability', { query: { branchId: form.branchId, serviceId: form.serviceId, date: form.date, employeeId: form.employeePreference || undefined } })
+    if (request === availabilityRequest) availability.value = response.data
+  } catch (error) {
+    if (request === availabilityRequest) submitError.value = (error as { data?: { statusMessage?: string } }).data?.statusMessage ?? 'Chưa thể kiểm tra lịch trống.'
+  } finally { if (request === availabilityRequest) availabilityBusy.value = false }
+}
+
+function selectSlot(slot: Availability['slots'][number]) {
+  form.time = slot.time
+  form.employeeId = String(slot.employeeId)
+}
+
+watch(() => [form.branchId, form.serviceId, form.date, form.employeePreference], loadAvailability)
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') closeBooking()
@@ -119,9 +165,11 @@ watch(isBookingOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
-  if (route.query['dat-lich'] === '1') openBooking()
+  await loadCustomer()
+  if (customer.value) { form.name = customer.value.name; form.phone = customer.value.phone }
+  if (route.query['dat-lich'] === '1') openBooking(String(route.query.serviceId ?? ''))
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
@@ -329,7 +377,7 @@ onBeforeUnmount(() => {
               <h2 id="booking-title" class="font-display text-5xl font-light leading-none tracking-[-0.04em]">Hẹn gặp bạn<br>tại MIÊN.</h2>
               <p class="mt-7 max-w-[42ch] leading-7 text-[#62675e]">{{ bookingResult.message }}</p>
               <p class="mt-5 text-xs text-[#757b70]">Mã yêu cầu: {{ bookingResult.reference }}</p>
-              <button type="button" class="button-primary mt-10 self-start" @click="closeBooking">Hoàn tất</button>
+              <div class="mt-10 flex flex-wrap gap-3"><NuxtLink to="/lich-cua-toi" class="button-primary">Xem lịch của tôi</NuxtLink><button type="button" class="button-quiet" @click="closeBooking">Hoàn tất</button></div>
             </div>
 
             <form v-else novalidate @submit.prevent="submitBooking">
@@ -352,12 +400,21 @@ onBeforeUnmount(() => {
 
                 <div class="grid gap-6 sm:grid-cols-2">
                   <label class="field-block">
-                    <span>Liệu trình</span>
-                    <CommonSelect v-model="form.service" :aria-invalid="Boolean(errors.service)">
-                      <option value="" disabled>Chọn liệu trình</option>
-                      <option v-for="service in services" :key="service.number" :value="service.name">{{ service.name }}</option>
+                    <span>Chi nhánh</span>
+                    <CommonSelect v-model="form.branchId" :aria-invalid="Boolean(errors.branchId)">
+                      <option value="" disabled>Chọn chi nhánh</option>
+                      <option v-for="branch in bookingOptions.branches" :key="branch.id" :value="branch.id">{{ branch.name }}</option>
                     </CommonSelect>
-                    <small v-if="errors.service" class="field-error">{{ errors.service }}</small>
+                    <small v-if="errors.branchId" class="field-error">{{ errors.branchId }}</small>
+                  </label>
+
+                  <label class="field-block">
+                    <span>Liệu trình</span>
+                    <CommonSelect v-model="form.serviceId" :aria-invalid="Boolean(errors.serviceId)">
+                      <option value="" disabled>Chọn liệu trình</option>
+                      <option v-for="service in bookingOptions.services" :key="service.id" :value="service.id">{{ service.name }} · {{ service.durationMinutes }} phút</option>
+                    </CommonSelect>
+                    <small v-if="errors.serviceId" class="field-error">{{ errors.serviceId }}</small>
                   </label>
 
                   <label class="field-block">
@@ -365,6 +422,26 @@ onBeforeUnmount(() => {
                     <CommonDatePicker v-model="form.date" :min="today" placeholder="Chọn ngày bạn muốn ghé" :aria-invalid="Boolean(errors.date)" />
                     <small v-if="errors.date" class="field-error">{{ errors.date }}</small>
                   </label>
+
+                  <label class="field-block">
+                    <span>Kỹ thuật viên <i>không bắt buộc</i></span>
+                    <CommonSelect v-model="form.employeePreference">
+                      <option value="">Ai cũng được</option>
+                      <option v-for="person in availableEmployees" :key="person.id" :value="person.id">{{ person.name }}</option>
+                    </CommonSelect>
+                  </label>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between gap-4"><span class="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#65705f]">Khung giờ còn trống</span><span v-if="selectedService" class="text-[0.67rem] text-[#777c72]">{{ selectedService.durationMinutes }} phút · {{ new Intl.NumberFormat('vi-VN').format(selectedService.price) }}đ</span></div>
+                  <p v-if="availabilityBusy" class="mt-3 text-sm text-[#737a70]">Đang kiểm tra lịch của MIÊN…</p>
+                  <div v-else-if="availability?.slots.length" class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    <button v-for="slot in availability.slots" :key="`${slot.time}-${slot.employeeId}`" type="button" class="rounded-full border px-3 py-2.5 text-xs font-semibold transition" :class="form.time === slot.time && form.employeeId === String(slot.employeeId) ? 'border-[#4c5d43] bg-[#4c5d43] text-white' : 'border-[#78816f]/30 hover:border-[#4c5d43]'" :title="slot.employeeName" @click="selectSlot(slot)">{{ slot.time }}</button>
+                  </div>
+                  <p v-else-if="form.date && form.serviceId" class="mt-3 text-sm text-[#737a70]">Ngày này chưa còn khung giờ phù hợp. Bạn thử chọn ngày khác nhé.</p>
+                  <p v-else class="mt-3 text-sm text-[#737a70]">Chọn liệu trình và ngày để xem giờ trống thực tế.</p>
+                  <small v-if="errors.time" class="field-error mt-2 block">{{ errors.time }}</small>
+                  <p v-if="form.time && form.employeeId" class="mt-3 text-xs text-[#65705f]">{{ availability?.slots.find(item => item.time === form.time && String(item.employeeId) === form.employeeId)?.employeeName }} sẽ chăm sóc bạn.</p>
                 </div>
 
                 <label class="field-block">

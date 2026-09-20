@@ -11,7 +11,7 @@ steps:
     next:
       - to: validate-booking
     type: client
-    detail: Khách nhập tên, số điện thoại, dịch vụ, ngày mong muốn và ghi chú.
+    detail: Khách chọn chi nhánh, liệu trình, kỹ thuật viên và một khung giờ còn trống; sau đó nhập tên, số điện thoại và ghi chú.
     source: app/pages/index.vue
     tables: []
   - title: Kiểm tra payload
@@ -33,7 +33,7 @@ steps:
     next:
       - to: create-booking
     type: service
-    detail: Tìm khách theo số điện thoại, tìm dịch vụ theo tên và xác định chi nhánh mặc định.
+    detail: Tìm hoặc tạo khách theo số điện thoại, đọc liệu trình theo ID và kiểm tra lại nhân viên cùng khung giờ trong transaction.
     source: server/modules/admin/resources/bookings.ts
     tables:
       - name: customers
@@ -81,7 +81,7 @@ steps:
             value: Dữ liệu khách gửi lên
           - name: starts_at
             change: Gán mới
-            value: Ngày yêu cầu lúc 09:00, timezone +07:00
+            value: Ngày và khung giờ khách đã chọn, timezone +07:00
           - name: ends_at
             change: Tính mới
             value: starts_at + services.duration_minutes
@@ -126,7 +126,7 @@ steps:
     id: booking-pending
     kind: end
     type: result
-    detail: API trả mã tham chiếu; lịch xuất hiện trên màn hình Đặt lịch để nhân viên phân công và xác nhận.
+    detail: API trả mã tham chiếu; lịch đã giữ nhân viên và khung giờ, xuất hiện trên màn hình Đặt lịch để nhân viên xác nhận.
     source: app/pages/admin/dat-lich.vue
     tables:
       - name: appointments
@@ -151,6 +151,7 @@ steps:
 
 ## Trường hợp cần chú ý
 
-- Website hiện gán giờ mặc định là `09:00`; nhân viên cần xác nhận lại giờ với khách.
+- Website chỉ hiển thị khung giờ còn trống theo thời lượng, thời gian đệm, lịch hiện có và ca/ngày nghỉ đã khai báo; server kiểm tra lại trước khi ghi.
+- Khách đã xác thực OTP có thể xem, đổi hoặc hủy lịch trước giờ hẹn ít nhất hai tiếng tại `/lich-cua-toi`.
 - Khi một lịch được chuyển sang `completed`, hệ thống có thể xuất vật tư theo định mức FEFO. Thao tác này chỉ được thực hiện một lần qua `inventory_deducted_at`.
 - Nếu dịch vụ chưa có trong danh mục, resource hiện có thể tạo dịch vụ tạm với giá `0`. Nên chuẩn hóa danh mục trước khi mở rộng form đặt lịch.

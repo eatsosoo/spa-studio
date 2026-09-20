@@ -11,7 +11,8 @@ Các bảng nghiệp vụ sử dụng InnoDB để hỗ trợ khóa ngoại và 
 | Xác thực và phân quyền | `users`, `auth_sessions`, `password_reset_tokens`, `roles`, `permissions`, `user_roles`, `role_permissions` | Logout được thực hiện bằng cách thu hồi session (`revoked_at`); token chỉ lưu dạng hash. Quyền có phạm vi chi nhánh. |
 | Chi nhánh và nhân sự | `branches`, `employees`, `employee_salary_configs` | Lịch sử cấu hình lương được giữ theo khoảng hiệu lực. |
 | Khách hàng | `customers` | Có điểm thành viên, tổng chi tiêu, nguồn và đồng ý marketing. |
-| Dịch vụ và lịch hẹn | `service_categories`, `services`, `appointments`, `appointment_services` | Snapshot tên/giá dịch vụ giữ nguyên lịch sử kể cả khi danh mục thay đổi. |
+| Dịch vụ và lịch hẹn | `service_categories`, `services`, `appointments`, `appointment_services`, `appointment_events` | Snapshot tên/giá dịch vụ giữ nguyên lịch sử; thay đổi do khách tự thực hiện được lưu thành sự kiện. |
+| Tài khoản khách | `customers`, `customer_sessions`, `customer_notifications` | Mật khẩu lưu dạng scrypt hash, phiên dùng cookie HttpOnly và nhắc lịch chỉ hiện khi tới `scheduled_at`. |
 | Chấm công và lương | `attendance_records`, `payroll_periods`, `payrolls`, `payroll_items` | Bảng lương lưu cả số tổng và dòng chi tiết để đối soát. |
 | Sản phẩm và kho | `product_categories`, `products`, `inventory_locations`, `inventory_stocks`, `inventory_lots`, `inventory_reservations`, `inventory_documents`, `inventory_document_items`, `inventory_transactions` | `inventory_stocks` là số dư tổng hợp; lô là nguồn chi tiết và được xuất FEFO. Chứng từ nháp chưa làm thay đổi tồn. |
 | Dịch vụ và vật tư | `services`, `service_product_usages`, `appointment_services` | Khi một dịch vụ hoàn tất, định mức được xuất FEFO đúng một lần và lưu giá vật tư thực tế. |
@@ -37,6 +38,7 @@ Các bảng nghiệp vụ sử dụng InnoDB để hỗ trợ khóa ngoại và 
 - Chỉ hoàn tất đơn mới giảm `inventory_stocks.quantity`. Hủy đơn trước khi giao chỉ giảm `reserved_quantity`; không tạo giao dịch xuất kho.
 - Mật khẩu phải được hash bằng Argon2id hoặc bcrypt ở tầng service; không bao giờ lưu mật khẩu rõ.
 - Đặt lịch cần kiểm tra trùng `employee_id` theo khoảng `starts_at`/`ends_at` trong transaction trước khi xác nhận.
+- Khách chỉ được đổi hoặc hủy lịch của chính mình và trước giờ hẹn ít nhất hai tiếng; mọi thay đổi phải ghi `appointment_events`.
 - Khi chốt bảng lương, lấy snapshot từ chấm công, hoa hồng dịch vụ/đơn hàng và cấu hình lương có hiệu lực; không tính lại bảng lương đã duyệt nếu không tạo phiên bản điều chỉnh.
 
 ## Khởi tạo

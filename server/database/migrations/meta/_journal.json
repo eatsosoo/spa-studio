@@ -78,6 +78,20 @@
       "when": 1789745725194,
       "tag": "0010_parched_wiccan",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1789914231619,
+      "tag": "0011_clammy_william_stryker",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1789915611808,
+      "tag": "0012_confused_adam_warlock",
+      "breakpoints": true
     }
   ]
 }
