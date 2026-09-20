@@ -1,38 +1,120 @@
 <script setup lang="ts">
-const props = defineProps<{ variant: 'arrival' | 'listening' | 'nature' | 'renewal' | 'finale' }>()
-const titles = { arrival: 'Một vị khách bước vào không gian của MIÊN', listening: 'Cuộc trò chuyện bên trà thảo mộc', nature: 'Những nguyên liệu chăm sóc từ thiên nhiên', renewal: 'Cảm giác tươi sáng sau khi được chăm sóc', finale: 'Không gian thư giãn của MIÊN Spa' }
+import { useId } from 'vue'
+
+defineProps<{ variant: 'arrival' | 'listening' | 'nature' | 'renewal' | 'finale' }>()
+
+const branchId = `${useId()}-story-branch`
+const descriptions = {
+  arrival: 'Một người phụ nữ bước qua cửa vòm vào không gian spa, bên cạnh bàn gỗ và cây xanh.',
+  listening: 'Khách hàng và người tư vấn ngồi đối diện, trò chuyện bên hai tách trà trong phòng sáng.',
+  renewal: 'Người phụ nữ thong thả bước đi trong khu vườn ngập nắng, với dáng vẻ nhẹ nhõm.',
+  finale: 'Người phụ nữ ngồi thả lỏng trên thảm, giữa ánh sáng dịu và những cành lá xanh.',
+}
 </script>
 
 <template>
-  <svg class="story-art" :class="`story-art--${variant}`" viewBox="0 0 620 520" role="img" :aria-label="titles[props.variant]">
-    <path class="story-art__ground" d="M69 397C144 342 205 382 271 348C353 306 420 335 552 385C507 459 399 481 278 478C168 475 98 455 69 397Z" fill="#d8dfce" />
-    <g class="story-art__plants" fill="#6f9571"><path d="M82 404C61 350 70 293 109 257C119 310 103 359 82 404Z" /><path d="M92 408C109 348 137 318 177 302C164 350 135 387 92 408Z" fill="#8eb18a" /><path d="M526 407C550 350 539 300 509 268C493 318 505 370 526 407Z" /><path d="M519 407C492 356 461 332 430 318C438 358 472 393 519 407Z" fill="#9ab694" /></g>
+  <StoryNatureIllustration v-if="variant === 'nature'" />
+  <div v-else class="story-art" :class="`story-art--${variant}`">
+    <svg class="story-art__setting" viewBox="0 0 720 560" aria-hidden="true" focusable="false">
+      <defs>
+        <g :id="branchId">
+          <path d="M57 194C50 151 62 105 50 38M54 111L25 82M55 143L85 112M54 171L24 146" fill="none" stroke="#7f9175" stroke-width="2" />
+          <path d="M51 62C34 52 32 28 40 13C56 26 59 43 51 62Z" fill="#6f8568" />
+          <path d="M54 92C53 69 66 47 84 42C86 66 74 84 54 92Z" fill="#a0b298" />
+          <path d="M52 119C30 117 16 96 16 76C37 81 49 96 52 119Z" fill="#7c9575" />
+          <path d="M55 149C58 125 75 108 96 106C93 130 79 144 55 149Z" fill="#6f8568" />
+          <path d="M54 178C31 173 17 154 20 134C42 141 53 156 54 178Z" fill="#acbba2" />
+          <path d="M56 191C67 170 83 161 102 164C92 185 75 193 56 191Z" fill="#879d7e" />
+          <path d="M29 194H81L75 245H35Z" fill="#c78f7e" />
+          <path d="M67 194H81L75 245H64Z" fill="#b88070" />
+          <ellipse cx="55" cy="194" rx="26" ry="6" fill="#dbb09c" />
+          <ellipse cx="55" cy="194" rx="20" ry="3.5" fill="#61745d" />
+        </g>
+      </defs>
 
-    <g v-if="variant === 'arrival'" class="story-art__figure">
-      <path d="M342 144C331 104 356 72 397 74C435 76 450 108 442 150L429 218H354Z" fill="#3f4e39" /><circle cx="393" cy="139" r="44" fill="#e9b784" /><path d="M354 133C361 93 423 86 440 128C414 116 381 113 354 133Z" fill="#4d5847" />
-      <path d="M354 206C377 187 415 187 436 210L474 376L318 376Z" fill="#d98978" /><path d="M354 215L324 302L292 349" stroke="#e9b784" stroke-width="24" stroke-linecap="round" /><path d="M384 375L373 454M430 375L447 454" stroke="#52614b" stroke-width="25" stroke-linecap="round" /><path d="M361 458H389M433 458H463" stroke="#30382c" stroke-width="12" stroke-linecap="round" /><path d="M449 230C487 236 506 265 503 300" fill="none" stroke="#e9b784" stroke-width="20" stroke-linecap="round" />
-    </g>
+      <template v-if="variant === 'arrival'">
+        <path d="M233 494V201C233 109 293 49 380 49C467 49 527 109 527 201V494Z" fill="#dde5d7" />
+        <path d="M251 493V204C251 125 304 68 380 68C456 68 509 125 509 204V493Z" fill="#faf6ec" />
+        <path d="M382 69V493M251 220H509" stroke="#dedfce" stroke-width="2" />
+        <path d="M382 82L475 124V492H382Z" fill="#eae6d8" />
+        <path d="M459 292V324" stroke="#a49177" stroke-width="3" stroke-linecap="round" />
+        <ellipse cx="395" cy="500" rx="128" ry="10" fill="#d1dac8" />
+        <g class="story-art__botanical"><use :href="`#${branchId}`" transform="translate(56 207) scale(1.18)" /></g>
+        <path d="M180 381H287V388H180Z" fill="#c3a88d" />
+        <path d="M190 389H197L189 494H183ZM273 389H280L289 494H282Z" fill="#a78b70" />
+        <path d="M212 352H240V378H212Z" fill="#ece4d4" />
+        <ellipse cx="226" cy="353" rx="14" ry="4" fill="#f7f2e8" />
+        <path d="M223 352C221 336 231 330 226 313M226 334C240 326 244 317 242 307C230 311 225 323 226 334M224 341C211 335 207 326 208 318C220 322 225 331 224 341" fill="#849b79" />
+      </template>
 
-    <g v-else-if="variant === 'listening'" class="story-art__conversation">
-      <ellipse cx="310" cy="381" rx="155" ry="24" fill="#b8c8ad" /><rect x="255" y="276" width="110" height="16" rx="8" fill="#9a7a61" /><path d="M274 290L263 379M347 290L358 379" stroke="#80634f" stroke-width="9" />
-      <g><circle cx="180" cy="187" r="42" fill="#edba86" /><path d="M140 185C140 130 218 128 224 186C202 161 167 158 140 185Z" fill="#42503c" /><path d="M139 231C161 209 198 210 220 234L239 360H119Z" fill="#758d70" /><path d="M215 259L277 299" stroke="#edba86" stroke-width="18" stroke-linecap="round" /></g>
-      <g><circle cx="437" cy="187" r="42" fill="#e8b17e" /><path d="M396 191C391 135 472 125 481 189C456 161 421 163 396 191Z" fill="#7b5748" /><path d="M396 232C418 210 456 210 479 237L503 360H374Z" fill="#d58b78" /><path d="M407 258L349 299" stroke="#e8b17e" stroke-width="18" stroke-linecap="round" /></g>
-      <g class="story-art__steam"><path d="M303 266C287 248 314 239 300 221M323 266C338 246 314 236 329 217" fill="none" stroke="#fffaf0" stroke-width="5" stroke-linecap="round" /><rect x="291" y="267" width="42" height="28" rx="10" fill="#f7f0de" /></g><g class="story-art__talk" fill="none" stroke="#91ae8d" stroke-width="4"><circle cx="310" cy="134" r="18" /><circle cx="349" cy="112" r="9" /><circle cx="270" cy="108" r="12" /></g>
-    </g>
+      <template v-else-if="variant === 'listening'">
+        <path d="M224 346V183C224 107 277 58 350 58C424 58 477 107 477 183V346Z" fill="#d9e3d3" />
+        <path d="M240 331V184C240 118 287 76 350 76C414 76 461 118 461 184V331Z" fill="#f7f2e8" />
+        <path d="M350 77V331M240 217H461" stroke="#dce4d5" stroke-width="3" />
+        <ellipse cx="365" cy="494" rx="228" ry="13" fill="#d5dfce" />
+        <g class="story-art__botanical"><use :href="`#${branchId}`" transform="translate(31 278) scale(.86)" /></g>
+        <g transform="translate(579 300)">
+          <path d="M0 194V35C0 16 15 0 35 0C54 0 70 16 70 35V194Z" fill="#e8e2d4" />
+          <path d="M11 79H59M11 138H59" stroke="#c7c5b3" stroke-width="2" />
+          <rect x="28" y="104" width="20" height="33" rx="3" fill="#a9b69d" />
+          <rect x="32" y="99" width="12" height="7" rx="1" fill="#52614b" />
+        </g>
+      </template>
 
-    <g v-else-if="variant === 'nature'" class="story-art__ingredients">
-      <circle cx="310" cy="257" r="115" fill="#c9dcc5" /><path d="M311 363C289 286 278 212 319 139C349 213 342 290 311 363Z" fill="#56815b" /><path d="M307 348C241 304 214 238 229 177C289 219 314 274 307 348Z" fill="#7fa37b" /><path d="M322 348C382 302 407 239 392 185C345 218 320 274 322 348Z" fill="#95b58e" />
-      <g class="story-art__bottle"><rect x="104" y="220" width="78" height="132" rx="25" fill="#e6c889" /><rect x="124" y="188" width="39" height="41" rx="8" fill="#6f8766" /><rect x="119" y="267" width="49" height="45" rx="4" fill="#fff8e9" /><path d="M144 300C122 282 146 270 163 278C160 293 152 298 144 300Z" fill="#77946e" /></g>
-      <g class="story-art__drop"><path d="M497 177C530 220 541 239 541 262C541 293 522 311 497 311C472 311 453 293 453 262C453 239 465 220 497 177Z" fill="#8fc5c5" /></g><g class="story-art__stones"><ellipse cx="457" cy="379" rx="67" ry="25" fill="#8c9188" /><ellipse cx="468" cy="351" rx="53" ry="24" fill="#a8aaa0" /><ellipse cx="456" cy="326" rx="39" ry="20" fill="#c3c0b4" /></g><g class="story-art__flower"><circle cx="192" cy="146" r="13" fill="#d99b77" /><circle cx="172" cy="132" r="21" fill="#f7ead0" /><circle cx="211" cy="129" r="21" fill="#f7ead0" /><circle cx="192" cy="111" r="21" fill="#fff8e9" /></g>
-    </g>
+      <template v-else-if="variant === 'renewal'">
+        <path d="M184 492V246C184 144 249 72 357 72C465 72 526 144 526 246V492Z" fill="#e7dfc7" />
+        <circle class="story-art__sun" cx="443" cy="163" r="61" fill="#ecd09a" />
+        <path d="M186 365C260 332 313 345 369 372C428 400 470 400 526 371V492H184Z" fill="#dce3d1" />
+        <path d="M285 493C325 455 386 432 457 432C484 432 507 437 526 444V492Z" fill="#f3ecd9" />
+        <ellipse cx="363" cy="501" rx="125" ry="9" fill="#d3d8c4" />
+        <g class="story-art__botanical"><use :href="`#${branchId}`" transform="translate(88 251)" /></g>
+        <g class="story-art__botanical story-art__botanical--second"><use :href="`#${branchId}`" transform="translate(615 327) scale(-.68 .68)" /></g>
+        <path d="M533 137L542 132L551 137M548 119L557 114L566 119" fill="none" stroke="#879780" stroke-width="2" stroke-linecap="round" />
+      </template>
 
-    <g v-else class="story-art__renewed">
-      <circle cx="424" cy="150" r="78" fill="#f0d59d" opacity=".8" /><g class="story-art__rays" stroke="#e3bd73" stroke-width="5" stroke-linecap="round"><path d="M424 42V17M424 282V257M316 150H291M557 150H532M348 74L330 56M500 226L518 244M500 74L518 56" /></g>
-      <path d="M250 152C245 103 276 75 318 82C357 88 370 124 355 170L344 224H259Z" fill="#4c5946" /><circle cx="307" cy="151" r="45" fill="#edbb87" /><path d="M265 142C280 104 339 108 352 144C320 130 294 130 265 142Z" fill="#53604c" /><path d="M266 218C289 195 329 197 350 222L387 396H220Z" fill="#829c78" /><path d="M274 396L263 459M341 396L354 459" stroke="#4f5b49" stroke-width="26" stroke-linecap="round" /><path d="M249 462H278M339 462H369" stroke="#30382c" stroke-width="12" stroke-linecap="round" /><path d="M275 161Q287 169 298 160M319 160Q331 169 341 158M299 184Q310 194 322 183" fill="none" stroke="#7e5447" stroke-width="3" stroke-linecap="round" /><g class="story-art__blooms"><circle cx="131" cy="286" r="23" fill="#f2c1ad" /><circle cx="162" cy="265" r="18" fill="#fff4e4" /><circle cx="476" cy="337" r="25" fill="#efb59f" /><circle cx="510" cy="307" r="16" fill="#fff4e4" /></g>
-    </g>
-  </svg>
+      <template v-else>
+        <path d="M127 493V219C127 119 205 47 314 47C421 47 501 119 501 219V493Z" fill="#dfe5d5" />
+        <path d="M148 484V221C148 132 217 68 314 68C411 68 480 132 480 221V484Z" fill="#f1eadb" />
+        <circle class="story-art__sun" cx="392" cy="169" r="66" fill="#e8cc99" />
+        <path d="M315 72V298M149 245H479" stroke="#e3decd" stroke-width="2" />
+        <ellipse cx="340" cy="495" rx="212" ry="17" fill="#b7c6aa" />
+        <ellipse cx="340" cy="493" rx="182" ry="11" fill="#d6decb" />
+        <g class="story-art__botanical"><use :href="`#${branchId}`" transform="translate(504 229) scale(1.1)" /></g>
+        <path d="M87 453H127L122 487H91Z" fill="#dcc4a4" />
+        <ellipse cx="107" cy="453" rx="20" ry="5" fill="#f7f2e8" />
+        <path d="M104 449V441" stroke="#53614b" stroke-width="1.5" />
+        <path d="M104 441C98 435 107 429 105 422C116 433 114 438 104 441Z" fill="#d5b171" />
+      </template>
+
+      <path d="M58 504H665" stroke="#acb9a2" stroke-width="1.2" stroke-linecap="round" />
+    </svg>
+
+    <img
+      class="story-art__people"
+      :src="`/images/story/${variant}.svg`"
+      :alt="descriptions[variant]"
+      :loading="variant === 'arrival' ? 'eager' : 'lazy'"
+      decoding="async"
+      width="720"
+      height="560"
+    >
+  </div>
 </template>
 
 <style scoped>
-.story-art { display:block;width:100%;height:auto;overflow:visible }.story-art :where(.story-art__figure,.story-art__conversation,.story-art__ingredients,.story-art__renewed){transform-origin:center bottom}.story-art__plants{transform-origin:center bottom;animation:story-sway 6s ease-in-out infinite}.story-art__steam{animation:story-float 3.2s ease-in-out infinite}.story-art__talk{animation:story-pulse 4s ease-in-out infinite}.story-art__drop{animation:story-drop 4.8s ease-in-out infinite}.story-art__flower,.story-art__blooms{transform-origin:center;animation:story-bloom 5s ease-in-out infinite}.story-art__rays{transform-origin:424px 150px;animation:story-rays 15s linear infinite}@keyframes story-sway{50%{transform:rotate(1.5deg)}}@keyframes story-float{50%{transform:translateY(-9px);opacity:.55}}@keyframes story-pulse{50%{transform:scale(1.04);opacity:.6}}@keyframes story-drop{50%{transform:translateY(10px)}}@keyframes story-bloom{50%{transform:scale(1.04)}}@keyframes story-rays{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.story-art *{animation:none!important}}
+.story-art { position: relative; width: 100%; aspect-ratio: 720 / 560; isolation: isolate; }
+.story-art__setting { display: block; width: 100%; height: auto; }
+.story-art__people { position: absolute; display: block; height: auto; object-fit: contain; }
+.story-art--arrival .story-art__people { inset: 15% auto auto 43%; width: 30%; height: 74%; }
+.story-art--listening .story-art__people { inset: 29% auto auto 15%; width: 72%; height: 60%; }
+.story-art--renewal .story-art__people { inset: 15% auto auto 38%; width: 33%; height: 74%; }
+.story-art--finale .story-art__people { inset: 27% auto auto 26%; width: 43%; height: 63%; }
+.story-art__botanical { transform-origin: 50% 90%; animation: story-botanical 8s ease-in-out infinite; }
+.story-art__botanical--second { animation-delay: -3s; }
+.story-art__sun { transform-box: fill-box; transform-origin: center; animation: story-sun 10s ease-in-out infinite; }
+@keyframes story-botanical { 50% { transform: rotate(.8deg); } }
+@keyframes story-sun { 50% { transform: scale(1.025); } }
+@media (prefers-reduced-motion: reduce) {
+  .story-art__botanical, .story-art__sun { animation: none; }
+}
 </style>
