@@ -88,7 +88,7 @@ useHead({ title: () => order.value ? `${order.value.reference} | MIÊN Spa` : '�
     <main class="px-5 pb-28 pt-10 md:px-10 md:pt-16 lg:px-14">
       <CheckoutSteps v-if="source === 'guest'" :current="3" />
       <div class="mx-auto max-w-[1050px]">
-        <NuxtLink v-if="source === 'session'" to="/don-hang" class="button-quiet mb-7 inline-flex items-center gap-2">
+        <NuxtLink v-if="source === 'session'" to="/tai-khoan?tab=don-hang" class="button-quiet mb-7 inline-flex items-center gap-2">
           <AppIcon name="arrow-left" :size="15" /> Đơn hàng của tôi
         </NuxtLink>
 
@@ -184,7 +184,7 @@ useHead({ title: () => order.value ? `${order.value.reference} | MIÊN Spa` : '�
                 </div>
               </section>
 
-              <NuxtLink v-if="source === 'session'" to="/danh-gia" class="button-primary w-full justify-center">Đánh giá trải nghiệm</NuxtLink>
+              <NuxtLink v-if="source === 'session'" to="/tai-khoan?tab=danh-gia" class="button-primary w-full justify-center">Đánh giá trải nghiệm</NuxtLink>
             </aside>
           </div>
         </template>

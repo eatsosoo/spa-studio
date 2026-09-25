@@ -35,7 +35,6 @@ watch(() => route.fullPath, () => {
         <NuxtLink to="/lieu-trinh" class="nav-link">Liệu trình</NuxtLink>
         <NuxtLink to="/san-pham" class="nav-link">Sản phẩm</NuxtLink>
         <NuxtLink to="/bai-viet" class="nav-link">Bài viết</NuxtLink>
-        <NuxtLink to="/cau-chuyen" class="nav-link">Câu chuyện</NuxtLink>
       </nav>
 
       <div class="flex items-center gap-3 lg:justify-self-end">
@@ -52,7 +51,6 @@ watch(() => route.fullPath, () => {
         <NuxtLink to="/lieu-trinh" class="mobile-nav-link" @click="isMenuOpen = false">Liệu trình</NuxtLink>
         <NuxtLink to="/san-pham" class="mobile-nav-link" @click="isMenuOpen = false">Sản phẩm</NuxtLink>
         <NuxtLink to="/bai-viet" class="mobile-nav-link" @click="isMenuOpen = false">Bài viết</NuxtLink>
-        <NuxtLink to="/cau-chuyen" class="mobile-nav-link" @click="isMenuOpen = false">Câu chuyện</NuxtLink>
         <NuxtLink to="/#khong-gian" class="mobile-nav-link" @click="isMenuOpen = false">Không gian</NuxtLink>
       </nav>
     </Transition>

@@ -240,7 +240,7 @@ onBeforeUnmount(() => {
             <p class="mt-7 max-w-[42ch] leading-7 text-[#62675e]">{{ bookingResult.message }}</p>
             <p class="mt-5 text-xs text-[#757b70]">Mã yêu cầu: <strong>{{ bookingResult.reference }}</strong></p>
             <div class="mt-10 flex flex-wrap gap-3">
-              <NuxtLink to="/lich-cua-toi" class="button-primary" @click="closeBooking">Xem lịch của tôi</NuxtLink>
+              <NuxtLink to="/tai-khoan?tab=lich-hen" class="button-primary" @click="closeBooking">Xem lịch của tôi</NuxtLink>
               <button type="button" class="button-quiet" @click="closeAndRestoreFocus">Hoàn tất</button>
             </div>
           </div>

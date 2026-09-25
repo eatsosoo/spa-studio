@@ -25,7 +25,6 @@ export const footerLinkGroups: Array<{ title: string; links: SiteLink[] }> = [
       { label: 'Liệu trình', to: '/lieu-trinh' },
       { label: 'Sản phẩm', to: '/san-pham' },
       { label: 'Bài viết', to: '/bai-viet' },
-      { label: 'Câu chuyện', to: '/cau-chuyen' },
       { label: 'Đặt lịch tư vấn', action: 'booking' },
     ],
   },
@@ -33,9 +32,9 @@ export const footerLinkGroups: Array<{ title: string; links: SiteLink[] }> = [
     title: 'Tài khoản',
     links: [
       { label: 'Hồ sơ', to: '/tai-khoan' },
-      { label: 'Lịch hẹn', to: '/lich-cua-toi' },
+      { label: 'Lịch hẹn', to: '/tai-khoan?tab=lich-hen' },
       { label: 'Giỏ hàng', to: '/gio-hang' },
-      { label: 'Đơn hàng', to: '/don-hang' },
+      { label: 'Đơn hàng', to: '/tai-khoan?tab=don-hang' },
     ],
   },
   {

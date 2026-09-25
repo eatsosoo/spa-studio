@@ -10,8 +10,8 @@ customer.value = meResponse.value?.data ?? null
 loaded.value = true
 
 function safeDestination() {
-  const requested = String(route.query.redirect ?? '/lich-cua-toi')
-  return requested.startsWith('/') && !requested.startsWith('//') ? requested : '/lich-cua-toi'
+  const requested = String(route.query.redirect ?? '/tai-khoan?tab=lich-hen')
+  return requested.startsWith('/') && !requested.startsWith('//') ? requested : '/tai-khoan?tab=lich-hen'
 }
 if (customer.value) await navigateTo(safeDestination())
 

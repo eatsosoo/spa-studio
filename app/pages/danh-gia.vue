@@ -2,6 +2,18 @@
 import type { CustomerAccount } from '~/composables/useCustomerAuth'
 import type { CustomerFeedback, CustomerFeedbackEligibility } from '~/types'
 
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), {
+  embedded: false,
+})
+const route = useRoute()
+
+if (!props.embedded && route.path === '/danh-gia') {
+  await navigateTo(
+    { path: '/tai-khoan', query: { tab: 'danh-gia' } },
+    { replace: true },
+  )
+}
+
 useSeoMeta({
   title: 'Đánh giá của tôi | MIÊN Spa',
   description: 'Gửi đánh giá cho sản phẩm và liệu trình đã trải nghiệm tại MIÊN Spa.',
@@ -18,8 +30,8 @@ const { data: meResponse } = await useAsyncData('feedback-customer-me', () => $f
 customer.value = meResponse.value?.data ?? null
 loaded.value = true
 
-if (!customer.value) {
-  await navigateTo({ path: '/dang-nhap', query: { redirect: '/danh-gia' } })
+if (!customer.value && props.embedded) {
+  await navigateTo({ path: '/dang-nhap', query: { redirect: '/tai-khoan?tab=danh-gia' } })
 }
 
 const { data: response, pending, error, refresh } = await useAsyncData(
@@ -111,21 +123,17 @@ async function submitFeedback() {
 </script>
 
 <template>
-  <div class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
-    <SiteHeader compact />
-    <main class="mx-auto max-w-[1200px] px-5 pb-24 pt-10 md:px-10 md:pt-16 lg:px-14">
+  <div :class="embedded ? 'contents' : 'min-h-[100dvh] bg-[#f3efe5] text-[#293126]'">
+    <SiteHeader v-if="!embedded" compact />
+    <component :is="embedded ? 'div' : 'main'" :class="embedded ? 'pt-0' : 'mx-auto max-w-[1200px] px-5 pb-24 pt-10 md:px-10 md:pt-16 lg:px-14'">
       <template v-if="customer">
-        <header class="flex flex-col gap-7 border-b border-[#78816f]/25 pb-8 lg:flex-row lg:items-end lg:justify-between">
+        <header v-if="!embedded" class="flex flex-col gap-7 border-b border-[#78816f]/25 pb-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p class="section-label">Chia sẻ cùng MIÊN</p>
             <h1 class="mt-3 font-display text-5xl font-light tracking-[-0.04em] md:text-6xl">Đánh giá của tôi.</h1>
             <p class="mt-4 max-w-2xl text-sm leading-7 text-[#687064]">Bạn chỉ có thể đánh giá sản phẩm đã nhận hoặc liệu trình đã hoàn tất.</p>
           </div>
-          <nav class="flex flex-wrap gap-3" aria-label="Khu vực tài khoản">
-            <NuxtLink to="/tai-khoan" class="button-quiet">Hồ sơ</NuxtLink>
-            <NuxtLink to="/lich-cua-toi" class="button-quiet">Lịch hẹn</NuxtLink>
-            <NuxtLink to="/don-hang" class="button-quiet">Đơn hàng</NuxtLink>
-          </nav>
+          <CustomerAccountTabs />
         </header>
 
         <p v-if="successMessage" class="mt-6 border-l-2 border-[#617657] bg-[#e4e8dc] px-5 py-4 text-sm text-[#40523a]" role="status">{{ successMessage }}</p>
@@ -198,8 +206,8 @@ async function submitFeedback() {
           </section>
         </template>
       </template>
-    </main>
-    <SiteFooter />
+    </component>
+    <SiteFooter v-if="!embedded" />
 
     <CommonModal :open="Boolean(selected)" title="Chia sẻ trải nghiệm" :description="selected ? `${typeLabel(selected.type)} · ${selected.name}` : ''" size="sm" :close-on-backdrop="!submitting" @close="closeForm">
       <form class="grid gap-6" @submit.prevent="submitFeedback">

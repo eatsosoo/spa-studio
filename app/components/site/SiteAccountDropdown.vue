@@ -114,7 +114,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', handleDocument
 
           <div v-if="customer" class="grid gap-1 py-2">
             <NuxtLink to="/tai-khoan" class="account-menu-item" role="menuitem" @click="setOpen(false)"><AppIcon name="profile" :size="16" />Hồ sơ</NuxtLink>
-            <NuxtLink to="/lich-cua-toi" class="account-menu-item" role="menuitem" @click="setOpen(false)"><AppIcon name="calendar" :size="16" />Lịch hẹn</NuxtLink>
+            <NuxtLink to="/tai-khoan?tab=lich-hen" class="account-menu-item" role="menuitem" @click="setOpen(false)"><AppIcon name="calendar" :size="16" />Lịch hẹn</NuxtLink>
             <button type="button" class="account-menu-item text-[#795047] disabled:cursor-wait disabled:opacity-60" role="menuitem" :disabled="logoutPending" @click="signOut"><AppIcon name="logout" :size="16" />{{ logoutPending ? 'Đang đăng xuất…' : 'Đăng xuất' }}</button>
             <p v-if="logoutError" class="px-3 pb-2 text-[0.68rem] leading-5 text-[#8b5148]" role="alert">{{ logoutError }}</p>
           </div>

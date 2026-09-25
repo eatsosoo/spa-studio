@@ -3,6 +3,18 @@ import type { CustomerAccount } from '~/composables/useCustomerAuth'
 import type { CustomerOrderSummary } from '~/types'
 import { formatPrice } from '~/utils/currency'
 
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), {
+  embedded: false,
+})
+const route = useRoute()
+
+if (!props.embedded && route.path === '/don-hang') {
+  await navigateTo(
+    { path: '/tai-khoan', query: { tab: 'don-hang' } },
+    { replace: true },
+  )
+}
+
 useSeoMeta({
   title: 'Đơn hàng của tôi | MIÊN Spa',
   description: 'Theo dõi lịch sử mua hàng và trạng thái đơn hàng tại MIÊN Spa.',
@@ -14,8 +26,8 @@ const { data: meResponse } = await useAsyncData('orders-customer-me', () => $fet
 customer.value = meResponse.value?.data ?? null
 loaded.value = true
 
-if (!customer.value) {
-  await navigateTo({ path: '/dang-nhap', query: { redirect: '/don-hang' } })
+if (!customer.value && props.embedded) {
+  await navigateTo({ path: '/dang-nhap', query: { redirect: '/tai-khoan?tab=don-hang' } })
 }
 
 const { data: response, pending, error, refresh } = await useAsyncData(
@@ -47,21 +59,17 @@ function itemSummary(order: CustomerOrderSummary) {
 </script>
 
 <template>
-  <div class="min-h-[100dvh] bg-[#f3efe5] text-[#293126]">
-    <SiteHeader compact />
-    <main class="mx-auto max-w-[1200px] px-5 pb-24 pt-10 md:px-10 md:pt-16 lg:px-14">
+  <div :class="embedded ? 'contents' : 'min-h-[100dvh] bg-[#f3efe5] text-[#293126]'">
+    <SiteHeader v-if="!embedded" compact />
+    <component :is="embedded ? 'div' : 'main'" :class="embedded ? 'pt-0' : 'mx-auto max-w-[1200px] px-5 pb-24 pt-10 md:px-10 md:pt-16 lg:px-14'">
       <template v-if="customer">
-        <header class="flex flex-col gap-7 border-b border-[#78816f]/25 pb-8 lg:flex-row lg:items-end lg:justify-between">
+        <header v-if="!embedded" class="flex flex-col gap-7 border-b border-[#78816f]/25 pb-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p class="section-label">Tài khoản khách hàng</p>
             <h1 class="mt-3 font-display text-5xl font-light tracking-[-0.04em] md:text-6xl">Đơn hàng của tôi.</h1>
             <p class="mt-4 max-w-2xl text-sm leading-7 text-[#687064]">Xem trạng thái thanh toán, giao hàng và toàn bộ sản phẩm trong từng đơn.</p>
           </div>
-          <nav class="flex flex-wrap gap-3" aria-label="Khu vực tài khoản">
-            <NuxtLink to="/tai-khoan" class="button-quiet">Hồ sơ</NuxtLink>
-            <NuxtLink to="/lich-cua-toi" class="button-quiet">Lịch hẹn</NuxtLink>
-            <NuxtLink to="/danh-gia" class="button-quiet">Đánh giá</NuxtLink>
-          </nav>
+          <CustomerAccountTabs />
         </header>
 
         <section class="mt-8 grid gap-4 sm:grid-cols-2">
@@ -132,7 +140,7 @@ function itemSummary(order: CustomerOrderSummary) {
           </div>
         </section>
       </template>
-    </main>
-    <SiteFooter />
+    </component>
+    <SiteFooter v-if="!embedded" />
   </div>
 </template>

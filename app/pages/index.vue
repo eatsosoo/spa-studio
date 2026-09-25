@@ -159,7 +159,7 @@ function formatPostDate(value: string | null) {
             </p>
           </div>
 
-          <div id="cau-chuyen" class="pb-4 lg:pb-12 lg:pl-[5vw]">
+          <div id="tinh-than" class="pb-4 lg:pb-12 lg:pl-[5vw]">
             <p class="mb-9 text-[0.69rem] font-semibold uppercase tracking-[0.28em] text-[#bcc5b4]">Tinh thần MIÊN</p>
             <h2 class="font-display text-5xl font-light leading-[0.98] tracking-[-0.04em] md:text-7xl">
               Ít hơn,<br><span class="italic text-[#c7cdbf]">nhưng đúng hơn.</span>
